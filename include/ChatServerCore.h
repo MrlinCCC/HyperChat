@@ -4,51 +4,75 @@
 #include <string>
 #include <memory>
 #include <Asio.hpp>
+#define MAX_BUFFER_SIZE 1024
 
 namespace ChatServerCore
 {
-
-    class Client
+    struct Client
     {
-    public:
-        Client(asio::ip::tcp::socket socket, const int userId);
+        Client(asio::ip::tcp::socket socket, const u_int clientId);
+        std::string readData();
+        void writeData(const std::string &message);
+        u_int getClientId() const { return m_clientId; }
+
+        void closeSocket()
+        {
+            asio::error_code ec;
+            m_socket.close(ec);
+            if (ec)
+            {
+                std::cerr << "Error closing socket: " << ec.message() << std::endl;
+            }
+        }
+
         ~Client();
-        void sendMessage(const std::string &message);
-        void receiveMessage();
-        int getSocket() const;
-        std::string getUsername() const;
 
-    private:
         asio::ip::tcp::socket m_socket;
-        int m_userId;
+        u_int m_clientId;
+        char m_buffer[MAX_BUFFER_SIZE];
+        std::string m_lastRead;
     };
 
-    class ChatRoom
-    {
-    public:
-        ChatRoom();
-        ~ChatRoom();
-        void addClient(std::shared_ptr<Client> client);
-        void removeClient(int clientSocket);
-        void broadcastMessage(const std::string &message);
+    // class ChatSession
+    // {
+    // public:
+    // asio::ip::tcp::socket m_socket;
+    //     enum
+    //     {
+    //         max_length = 1024
+    //     };
+    //     char m_buffer[max_length];
+    // }
 
-    private:
-        std::vector<int> clients;
-    };
+    // class ChatRoom
+    // {
+    // public:
+    //     ChatRoom();
+    //     ~ChatRoom();
+    //     void addClient(std::shared_ptr<Client> client);
+    //     void removeClient(int clientSocket);
+    //     void broadcastMessage(const std::string &message);
+
+    // private:
+    //     std::vector<int> clients;
+    // };
 
     class ChatServer
     {
     public:
-        ChatServer(int port);
+        ChatServer(u_int port);
         ~ChatServer();
         void startServer();
+        void broadcastMessage(u_int sourceClientId, const std::string &message);
+        void listerMessage(Client &client);
         void stopServer();
 
     private:
         asio::io_context m_ioContext;
         std::shared_ptr<asio::ip::tcp::acceptor> p_acceptor;
         std::vector<std::shared_ptr<Client>> m_clients;
-        std::vector<std::shared_ptr<ChatRoom>> m_chatRooms;
+        std::mutex m_clientsMutex;
+        // std::vector<std::shared_ptr<ChatRoom>> m_chatRooms;
         bool m_isRunning;
     };
 }

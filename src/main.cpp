@@ -1,6 +1,8 @@
 #include <iostream>
 #include "ChatServerCore.h"
 #include <Asio.hpp>
+#include <thread>
+#include <chrono>
 
 int testAiso()
 {
@@ -52,6 +54,5 @@ void testChatServer()
 int main(int argc, char *argv[])
 {
     testChatServer();
-    std::cin.get();
     return 0;
 }
