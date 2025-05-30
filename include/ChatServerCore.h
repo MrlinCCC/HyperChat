@@ -18,10 +18,15 @@ namespace ChatServerCore
         void closeSocket()
         {
             asio::error_code ec;
+            m_socket.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
+            if (ec)
+            {
+                std::cerr << "Shutdown socket error: " << ec.message() << std::endl;
+            }
             m_socket.close(ec);
             if (ec)
             {
-                std::cerr << "Error closing socket: " << ec.message() << std::endl;
+                std::cerr << "Close socket error: " << ec.message() << std::endl;
             }
         }
 
@@ -31,6 +36,7 @@ namespace ChatServerCore
         u_int m_clientId;
         char m_buffer[MAX_BUFFER_SIZE];
         std::string m_lastRead;
+        std::string m_username;
     };
 
     // class ChatSession
@@ -62,10 +68,12 @@ namespace ChatServerCore
     public:
         ChatServer(u_int port);
         ~ChatServer();
-        void startServer();
+        void runServer();
         void broadcastMessage(u_int sourceClientId, const std::string &message);
         void listerMessage(Client &client);
+        bool identifyClient(Client &client);
         void stopServer();
+        std::string generateToken(const Client &client);
 
     private:
         asio::io_context m_ioContext;

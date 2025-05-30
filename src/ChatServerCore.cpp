@@ -47,11 +47,11 @@ namespace ChatServerCore
         asio::ip::tcp::endpoint endpoint(asio::ip::tcp::v4(), port);
         p_acceptor = std::make_shared<asio::ip::tcp::acceptor>(m_ioContext, endpoint);
     }
-    void ChatServer::startServer()
+    void ChatServer::runServer()
     {
         m_isRunning = true;
         u_int user_count = 0;
-        std::cout << "Hyper Chat server started on port " << p_acceptor->local_endpoint().port() << std::endl;
+        std::cout << "Hyper Chat server run on port " << p_acceptor->local_endpoint().port() << std::endl;
         while (m_isRunning)
         {
             asio::ip::tcp::socket socket(m_ioContext);
@@ -69,7 +69,8 @@ namespace ChatServerCore
                 m_clients.push_back(new_client);
             }
             std::thread([this, new_client]()
-                        { this->listerMessage(*new_client); })
+                        {   if(!this->identifyClient(*new_client)) return;
+                            this->listerMessage(*new_client); })
                 .detach();
         }
     }
@@ -100,6 +101,29 @@ namespace ChatServerCore
             broadcastMessage(client.getClientId(), message);
         }
     }
+
+    bool ChatServer::identifyClient(Client &client)
+    {
+        try
+        {
+            client.writeData("LOGIN:USERNAME");
+            std::string username = client.readData();
+            std::cout << "Client " << client.getClientId() << " identified as: " << username << std::endl;
+            client.m_username = username;
+            std::string token = this->generateToken(client);
+            client.writeData(token);
+            client.writeData("Welcome, " + username + "!");
+            broadcastMessage(client.getClientId(), username + " has joined the chat.");
+            return true;
+        }
+        catch (const std::exception &e)
+        {
+
+            std::cerr << "Identify Client " << client.getClientId() << " Fail!" << std::endl;
+            return false;
+        }
+    }
+
     void ChatServer::stopServer()
     {
         m_isRunning = false;
@@ -110,6 +134,12 @@ namespace ChatServerCore
         }
         std::cout << "Chat server stopped." << std::endl;
     }
+
+    std::string ChatServer::generateToken(const Client &client)
+    {
+        return std::to_string(client.getClientId()) + "_" + client.m_username;
+    }
+
     ChatServer::~ChatServer()
     {
     }
