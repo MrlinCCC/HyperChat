@@ -1,5 +1,5 @@
 #include <iostream>
-#include "ChatServerCore.h"
+#include <ChatServerCore.h>
 #include <Asio.hpp>
 #include <thread>
 #include <chrono>
@@ -47,8 +47,8 @@ int testAiso()
 
 void testChatServer()
 {
-    ChatServerCore::ChatServer server(12345);
-    server.startServer();
+    ChatServer server(12345);
+    server.runServer();
 }
 
 int main(int argc, char *argv[])
