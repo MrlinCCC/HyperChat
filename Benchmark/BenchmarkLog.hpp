@@ -10,10 +10,6 @@
 
 #define EPOCH 100000
 
-// static std::mutex init_mutex;
-// static std::condition_variable init_cv;
-// static bool logger_ready = false;
-
 static std::once_flag init_flag;
 static void InitializeLogger()
 {
@@ -39,6 +35,7 @@ static void BM_LogBenchmark(benchmark::State &state)
         }
     }
     state.SetItemsProcessed(static_cast<int64_t>(state.iterations()) * EPOCH);
+    std::this_thread::sleep_for(std::chrono::seconds(2));
 }
 
 BENCHMARK(BM_LogBenchmark)->Threads(1)->Threads(2)->Threads(4)->Threads(8);

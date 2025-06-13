@@ -10,6 +10,7 @@
 #include <condition_variable>
 #include <fmt/core.h>
 #include <fmt/printf.h>
+#include "Semaphore.hpp"
 
 enum LogLevel
 {
@@ -67,6 +68,8 @@ struct LogEvent
         : m_message(LogMessageFormat(message, std::forward<Args>(args)...)),
           m_level(LogLevel::DEBUG), m_fileName(fileName), m_line(line), m_time(Timestamp::Now().ToString()){};
 
+    LogEvent() = default;
+
     std::string m_message;
     LogLevel m_level;
     std::string m_fileName;
@@ -115,6 +118,10 @@ public:
     FileWriter(const std::string &file)
     {
         m_ofs.open(file, std::ios::app);
+        if (!m_ofs.is_open())
+        {
+            throw std::runtime_error("Failed to open log file: " + file);
+        }
     }
     void Log(const LogEvent &event) override
     {
@@ -130,6 +137,114 @@ public:
 
 private:
     std::ofstream m_ofs;
+};
+
+#define CHUNKSIZE 1024
+#define BUFFERSIZE 1024
+#define TIMEOUT 1000
+
+struct Chunk
+{
+    Chunk(uint32_t chunkSize = CHUNKSIZE) : m_chunkSize(chunkSize), m_used(0), m_isFull(false)
+    {
+        m_memory = std::vector<LogEvent>(chunkSize);
+    }
+    template <typename T>
+    void Push(T &&event)
+    {
+        if (m_isFull)
+            return;
+        m_memory[m_used] = std::forward<T>(event);
+        if (++m_used == m_chunkSize)
+            m_isFull = true;
+    }
+    std::vector<LogEvent> Extract()
+    {
+        if (!m_used)
+            return {};
+        std::vector<LogEvent> events(std::make_move_iterator(m_memory.begin()),
+                                     std::make_move_iterator(m_memory.begin() + m_used));
+
+        m_used = 0;
+        m_isFull = false;
+        return events;
+    }
+
+    std::vector<LogEvent> m_memory;
+    uint32_t m_chunkSize;
+    uint32_t m_used;
+    bool m_isFull;
+};
+
+class RingChunkBuffer
+{
+public:
+    RingChunkBuffer(uint32_t bufferSize = BUFFERSIZE, uint32_t msTimeout = TIMEOUT)
+        : m_bufferSize(bufferSize), m_consumer(0), m_producer(0), m_semWriteToDisk(0), m_semFreeChunks(bufferSize), m_consumeTimeout(msTimeout)
+    {
+        m_ringChunks = std::vector<Chunk>(bufferSize);
+        m_consumeTimeout = std::chrono::microseconds(msTimeout);
+    }
+
+    template <typename T>
+    void Produce(T &&event)
+    {
+        std::lock_guard<std::mutex> lock(m_mtx);
+        Chunk &chunkBuffer = m_ringChunks[m_producer];
+        chunkBuffer.Push(std::forward<T>(event));
+        if (chunkBuffer.m_isFull)
+        {
+            m_semWriteToDisk.release();
+            m_semFreeChunks.acquire();
+            m_producer = (m_producer + 1) % m_bufferSize;
+        }
+    }
+    std::vector<LogEvent> Consume()
+    {
+        bool acquire = m_semWriteToDisk.acquire_for(m_consumeTimeout);
+        std::vector<LogEvent> logEvents;
+        if (!acquire)
+        {
+            std::lock_guard<std::mutex> lock(m_mtx);
+            Chunk &chunkBuffer = m_ringChunks[m_consumer];
+            if (chunkBuffer.m_used > 0)
+            {
+                logEvents = chunkBuffer.Extract();
+            }
+        }
+        else
+        {
+            Chunk &chunkBuffer = m_ringChunks[m_consumer];
+            logEvents = chunkBuffer.Extract();
+            m_consumer = (m_consumer + 1) % m_bufferSize;
+            m_semFreeChunks.release();
+        }
+        return logEvents;
+    }
+
+    void Flush(LogWriter::ptr writer)
+    {
+        for (auto &chunk : m_ringChunks)
+        {
+            if (chunk.m_used > 0)
+            {
+                for (auto &event : chunk.m_memory)
+                {
+                    writer->Log(event);
+                }
+            }
+        }
+    }
+
+private:
+    uint32_t m_bufferSize;
+    std::vector<Chunk> m_ringChunks;
+    uint32_t m_consumer;
+    uint32_t m_producer;
+    std::mutex m_mtx;
+    Semaphore m_semWriteToDisk;
+    Semaphore m_semFreeChunks;
+    std::chrono::microseconds m_consumeTimeout;
 };
 
 class Logger
@@ -159,52 +274,45 @@ public:
             return;
         LogEvent localEvent = std::forward<T>(event);
         localEvent.m_level = level;
-
-        std::lock_guard<std::mutex> lock(m_mtx);
-        m_logQueue.push(std::move(localEvent));
-        m_cv.notify_one();
+        m_ringChunkBuffer.Produce(std::move(localEvent));
     }
 
 private:
     Logger() : m_level(INFO), m_isRunning(true)
     {
-        m_logThread = std::thread(&Logger::ProcessLog, this);
         SetConsoleWriter();
+        m_logThread = std::thread(&Logger::ProcessLog, this);
     };
     Logger(const Logger &) = delete;
     Logger &operator=(const Logger &) = delete;
     void ProcessLog()
     {
-        while (!m_logQueue.empty() || m_isRunning)
+        while (true)
         {
-            std::unique_lock<std::mutex> lock(m_mtx);
-            m_cv.wait(lock, [this]
-                      { return !m_logQueue.empty() || !m_isRunning; });
-            if (!m_logQueue.empty())
+            std::vector<LogEvent> logEvents = m_ringChunkBuffer.Consume();
+            if (!m_isRunning && logEvents.empty())
+                break;
+            for (LogEvent &event : logEvents)
             {
-                const LogEvent &event = m_logQueue.front();
                 m_writer->Log(event);
-                m_logQueue.pop();
             }
         }
+        // m_ringChunkBuffer.Flush(m_writer);
     }
     ~Logger()
     {
+        m_isRunning = false;
+        if (m_logThread.joinable())
         {
-            std::lock_guard<std::mutex> lock(m_mtx);
-            m_isRunning = false;
+            m_logThread.join();
         }
-        m_cv.notify_one();
-        m_logThread.join();
     }
 
     LogLevel m_level;
     LogWriter::ptr m_writer;
     std::thread m_logThread;
-    std::mutex m_mtx;
-    std::queue<LogEvent> m_logQueue;
-    std::condition_variable m_cv;
-    bool m_isRunning;
+    RingChunkBuffer m_ringChunkBuffer;
+    std::atomic<bool> m_isRunning;
 };
 
 #define MAKE_LOG_EVENT(fmt, ...) LogEvent((fmt), __FILE__, __LINE__, ##__VA_ARGS__)
