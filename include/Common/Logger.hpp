@@ -154,7 +154,6 @@ struct Chunk
     template <typename T>
     void Push(T &&event)
     {
-        std::lock_guard<std::mutex> lock(m_mtx);
         if (m_isFull)
             throw std::runtime_error("Push error:chunk full!");
         m_memory[m_used] = std::forward<T>(event);
@@ -163,7 +162,6 @@ struct Chunk
     }
     std::vector<LogEvent> Extract()
     {
-        std::lock_guard<std::mutex> lock(m_mtx);
         if (!m_used)
             return {};
         std::vector<LogEvent> events(std::make_move_iterator(m_memory.begin()),
@@ -178,7 +176,6 @@ struct Chunk
     uint32_t m_chunkSize;
     uint32_t m_used;
     bool m_isFull;
-    std::mutex m_mtx;
 };
 
 class RingChunkBuffer
