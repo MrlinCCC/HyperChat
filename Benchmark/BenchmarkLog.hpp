@@ -35,7 +35,9 @@ static void BM_LogBenchmark(benchmark::State &state)
         }
     }
     state.SetItemsProcessed(static_cast<int64_t>(state.iterations()) * EPOCH);
-    std::this_thread::sleep_for(std::chrono::seconds(2));
 }
 
-BENCHMARK(BM_LogBenchmark)->Threads(1)->Threads(2)->Threads(4)->Threads(8);
+BENCHMARK(BM_LogBenchmark)->Threads(1)->Iterations(8);
+BENCHMARK(BM_LogBenchmark)->Threads(2)->Iterations(4);
+BENCHMARK(BM_LogBenchmark)->Threads(4)->Iterations(2);
+BENCHMARK(BM_LogBenchmark)->Threads(8)->Iterations(1);

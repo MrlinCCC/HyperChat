@@ -10,7 +10,7 @@
 #include <condition_variable>
 #include <fmt/core.h>
 #include <fmt/printf.h>
-#include "Semaphore.hpp"
+#include <array>
 
 enum LogLevel
 {
@@ -140,26 +140,30 @@ private:
 };
 
 #define CHUNKSIZE 1024
-#define BUFFERSIZE 1024
+#define BUFFERSIZE 4
 #define TIMEOUT 1000
 
 struct Chunk
 {
-    Chunk(uint32_t chunkSize = CHUNKSIZE) : m_chunkSize(chunkSize), m_used(0), m_isFull(false)
+    Chunk(uint32_t chunkSize = CHUNKSIZE)
+        : m_chunkSize(chunkSize), m_used(0), m_isFull(false)
     {
         m_memory = std::vector<LogEvent>(chunkSize);
     }
+
     template <typename T>
     void Push(T &&event)
     {
+        std::lock_guard<std::mutex> lock(m_mtx);
         if (m_isFull)
-            return;
+            throw std::runtime_error("Push error:chunk full!");
         m_memory[m_used] = std::forward<T>(event);
         if (++m_used == m_chunkSize)
             m_isFull = true;
     }
     std::vector<LogEvent> Extract()
     {
+        std::lock_guard<std::mutex> lock(m_mtx);
         if (!m_used)
             return {};
         std::vector<LogEvent> events(std::make_move_iterator(m_memory.begin()),
@@ -174,13 +178,14 @@ struct Chunk
     uint32_t m_chunkSize;
     uint32_t m_used;
     bool m_isFull;
+    std::mutex m_mtx;
 };
 
 class RingChunkBuffer
 {
 public:
     RingChunkBuffer(uint32_t bufferSize = BUFFERSIZE, uint32_t msTimeout = TIMEOUT)
-        : m_bufferSize(bufferSize), m_consumer(0), m_producer(0), m_semWriteToDisk(0), m_semFreeChunks(bufferSize), m_consumeTimeout(msTimeout)
+        : m_bufferSize(bufferSize), m_consumer(0), m_producer(0), m_consumeTimeout(msTimeout)
     {
         m_ringChunks = std::vector<Chunk>(bufferSize);
         m_consumeTimeout = std::chrono::microseconds(msTimeout);
@@ -189,49 +194,62 @@ public:
     template <typename T>
     void Produce(T &&event)
     {
-        std::lock_guard<std::mutex> lock(m_mtx);
-        Chunk &chunkBuffer = m_ringChunks[m_producer];
-        chunkBuffer.Push(std::forward<T>(event));
-        if (chunkBuffer.m_isFull)
+        std::unique_lock<std::mutex> lock(m_mtx);
+        m_cvWaitEmptyChunk.wait(lock, [this]()
+                                { return !m_ringChunks[m_producer].m_isFull ||
+                                         ((m_producer + 1) % m_bufferSize != m_consumer); });
+        if (m_ringChunks[m_producer].m_isFull)
         {
-            m_semWriteToDisk.release();
-            m_semFreeChunks.acquire();
             m_producer = (m_producer + 1) % m_bufferSize;
+            m_cvWriteToDisk.notify_one();
         }
+        m_ringChunks[m_producer].Push(event);
     }
     std::vector<LogEvent> Consume()
     {
-        bool acquire = m_semWriteToDisk.acquire_for(m_consumeTimeout);
-        std::vector<LogEvent> logEvents;
-        if (!acquire)
+        bool acquire = false;
+        std::vector<LogEvent> logEvents = {};
+
+        std::unique_lock<std::mutex> lock(m_mtx);
+        acquire = m_cvWriteToDisk.wait_for(lock, m_consumeTimeout, [this]()
+                                           { return m_consumer != m_producer; });
+        if (acquire)
         {
-            std::lock_guard<std::mutex> lock(m_mtx);
+            lock.unlock();
+            Chunk &chunkBuffer = m_ringChunks[m_consumer];
+            logEvents = chunkBuffer.Extract();
+            m_consumer = (m_consumer + 1) % m_bufferSize;
+            m_cvWaitEmptyChunk.notify_all();
+        }
+        else
+        {
             Chunk &chunkBuffer = m_ringChunks[m_consumer];
             if (chunkBuffer.m_used > 0)
             {
                 logEvents = chunkBuffer.Extract();
             }
         }
-        else
-        {
-            Chunk &chunkBuffer = m_ringChunks[m_consumer];
-            logEvents = chunkBuffer.Extract();
-            m_consumer = (m_consumer + 1) % m_bufferSize;
-            m_semFreeChunks.release();
-        }
         return logEvents;
     }
 
     void Flush(LogWriter::ptr writer)
     {
-        for (auto &chunk : m_ringChunks)
+        std::lock_guard<std::mutex> lock(m_mtx);
+        while (m_consumer != m_producer)
         {
-            if (chunk.m_used > 0)
+            std::vector<LogEvent> LogEvents = m_ringChunks[m_consumer].Extract();
+            for (LogEvent &event : LogEvents)
             {
-                for (auto &event : chunk.m_memory)
-                {
-                    writer->Log(event);
-                }
+                writer->Log(event);
+            }
+            m_consumer = (m_consumer + 1) % m_bufferSize;
+        }
+        if (m_ringChunks[m_consumer].m_used > 0)
+        {
+            std::vector<LogEvent> LogEvents = m_ringChunks[m_consumer].Extract();
+            for (LogEvent &event : LogEvents)
+            {
+                writer->Log(event);
             }
         }
     }
@@ -242,8 +260,8 @@ private:
     uint32_t m_consumer;
     uint32_t m_producer;
     std::mutex m_mtx;
-    Semaphore m_semWriteToDisk;
-    Semaphore m_semFreeChunks;
+    std::condition_variable m_cvWriteToDisk;
+    std::condition_variable m_cvWaitEmptyChunk;
     std::chrono::microseconds m_consumeTimeout;
 };
 
@@ -270,11 +288,16 @@ public:
     template <typename T>
     void WriteLogEvent(T &&event, LogLevel level)
     {
-        if (level < m_level)
+        if (!m_isRunning || level < m_level)
             return;
         LogEvent localEvent = std::forward<T>(event);
         localEvent.m_level = level;
         m_ringChunkBuffer.Produce(std::move(localEvent));
+    }
+
+    void LogFlush()
+    {
+        m_ringChunkBuffer.Flush(m_writer);
     }
 
 private:
@@ -287,17 +310,15 @@ private:
     Logger &operator=(const Logger &) = delete;
     void ProcessLog()
     {
-        while (true)
+        while (m_isRunning)
         {
             std::vector<LogEvent> logEvents = m_ringChunkBuffer.Consume();
-            if (!m_isRunning && logEvents.empty())
-                break;
             for (LogEvent &event : logEvents)
             {
                 m_writer->Log(event);
             }
         }
-        // m_ringChunkBuffer.Flush(m_writer);
+        LogFlush();
     }
     ~Logger()
     {

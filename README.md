@@ -8,7 +8,7 @@
 - Vcpkg：C++包管理工具，简化依赖库安装
 - Boost.Asio：高性能异步网络编程库，实现高效 IO 处理
 - Google Test：单元测试框架，保障代码质量
-- 压测框架（例如 wrk/k6）：用于性能测试，评估服务器的并发处理能力和响应速度
+- Goole Benchmark: 压测框架（例如 wrk/k6）
 
 ## 🚀 预期基本功能
 
@@ -28,8 +28,8 @@ HyperChatServer 是一个轻量级、高性能的 C++ 聊天服务器，专为�
 ## 🛠️ Build
 
 ```bash
-git clone https://github.com/yourusername/HyperChatServer.git
-cd HyperChatServer
+git clone https://github.com/yourusername/HyperChat.git
+cd HyperChat
 mkdir build && cd build
 cmake ..
 cmake --build .
