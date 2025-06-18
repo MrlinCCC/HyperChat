@@ -11,6 +11,8 @@
 #include <fmt/core.h>
 #include <fmt/printf.h>
 #include <array>
+#include "Semaphore.hpp"
+#include "SpinLock.hpp"
 
 enum LogLevel
 {
@@ -42,7 +44,7 @@ static std::string LogLevelToString(const LogLevel &level) noexcept
 }
 
 template <typename... Args>
-std::string LogMessageFormat(const std::string &fmt_str, Args &&...args)
+std::string FormatLogMessage(const std::string &fmt_str, Args &&...args)
 {
     try
     {
@@ -61,32 +63,6 @@ std::string LogMessageFormat(const std::string &fmt_str, Args &&...args)
     }
 }
 
-struct LogEvent
-{
-    template <typename... Args>
-    LogEvent(const std::string &message, const std::string fileName, uint32_t line, Args &&...args)
-        : m_message(LogMessageFormat(message, std::forward<Args>(args)...)),
-          m_level(LogLevel::DEBUG), m_fileName(fileName), m_line(line), m_time(Timestamp::Now().ToString()){};
-
-    LogEvent() = default;
-
-    std::string m_message;
-    LogLevel m_level;
-    std::string m_fileName;
-    uint32_t m_line;
-    std::string m_time;
-};
-
-static std::string LogEventToString(const LogEvent &event)
-{
-    std::ostringstream oss;
-    oss << "[" << event.m_time << "] "
-        << "[" << LogLevelToString(event.m_level) << "] "
-        << "[" << event.m_fileName << ":" << event.m_line << "]:"
-        << event.m_message;
-    return oss.str();
-}
-
 class LogWriter
 {
 public:
@@ -96,7 +72,7 @@ public:
 
     virtual ~LogWriter() noexcept {}
 
-    virtual void Log(const LogEvent &event) = 0;
+    virtual void Log(const std::string &logLine) = 0;
 };
 
 class ConsoleWriter : public LogWriter
@@ -105,10 +81,10 @@ public:
     ConsoleWriter() = default;
     ~ConsoleWriter() = default;
 
-    void Log(const LogEvent &event) override
+    void Log(const std::string &logLine) override
     {
-        std::ostream &os = event.m_level >= ERROR ? std::cerr : std::cout;
-        os << LogEventToString(event) << std::endl;
+        std::cout << logLine;
+        std::cout.flush();
     }
 };
 
@@ -123,9 +99,10 @@ public:
             throw std::runtime_error("Failed to open log file: " + file);
         }
     }
-    void Log(const LogEvent &event) override
+    void Log(const std::string &logLine) override
     {
-        m_ofs << LogEventToString(event) << std::endl;
+        m_ofs << logLine;
+        m_ofs.flush();
     }
     ~FileWriter()
     {
@@ -139,127 +116,159 @@ private:
     std::ofstream m_ofs;
 };
 
-#define CHUNKSIZE 1024
-#define BUFFERSIZE 4
-#define TIMEOUT 1000
+#define CHUNKSIZE (1024 * 256)
+#define BUFFERSIZE 64
+#define TIMEOUT 1
 
 struct Chunk
 {
-    Chunk(uint32_t chunkSize = CHUNKSIZE)
+    Chunk(size_t chunkSize = CHUNKSIZE)
         : m_chunkSize(chunkSize), m_used(0), m_isFull(false)
     {
-        m_memory = std::vector<LogEvent>(chunkSize);
+        m_memory = new char[chunkSize];
     }
 
-    template <typename T>
-    void Push(T &&event)
+    Chunk(const Chunk &other)
+        : m_chunkSize(other.m_chunkSize), m_used(other.m_used), m_isFull(other.m_isFull)
     {
-        if (m_isFull)
-            throw std::runtime_error("Push error:chunk full!");
-        m_memory[m_used] = std::forward<T>(event);
-        if (++m_used == m_chunkSize)
-            m_isFull = true;
+        m_memory = new char[m_chunkSize];
+        std::memcpy(m_memory, other.m_memory, m_used);
     }
-    std::vector<LogEvent> Extract()
+
+    Chunk &operator=(const Chunk &other)
+    {
+        if (this != &other)
+        {
+            delete[] m_memory;
+
+            m_chunkSize = other.m_chunkSize;
+            m_used = other.m_used;
+            m_isFull = other.m_isFull;
+
+            m_memory = new char[m_chunkSize];
+            std::memcpy(m_memory, other.m_memory, m_used);
+        }
+        return *this;
+    }
+
+    void Push(const std::string &logLine)
+    {
+        size_t length = logLine.size();
+        if (m_isFull || m_used + length > m_chunkSize)
+        {
+            throw std::runtime_error("Chunk push error:chunk space is not enough!");
+        }
+        std::memcpy(m_memory + m_used, logLine.data(), length);
+        m_used += length;
+    }
+    std::string Extract()
     {
         if (!m_used)
-            return {};
-        std::vector<LogEvent> events(std::make_move_iterator(m_memory.begin()),
-                                     std::make_move_iterator(m_memory.begin() + m_used));
-
+            return "";
+        std::string logLines(m_memory, m_used);
+        std::memset(m_memory, 0, m_used);
         m_used = 0;
         m_isFull = false;
-        return events;
+        return logLines;
+    }
+    size_t freeSize()
+    {
+        return m_chunkSize - m_used;
     }
 
-    std::vector<LogEvent> m_memory;
-    uint32_t m_chunkSize;
-    uint32_t m_used;
+    ~Chunk()
+    {
+        if (m_memory)
+        {
+            delete[] m_memory;
+            m_memory = nullptr;
+        }
+    }
+
+    char *m_memory;
+    size_t m_chunkSize;
+    size_t m_used;
     bool m_isFull;
 };
 
 class RingChunkBuffer
 {
 public:
-    RingChunkBuffer(uint32_t bufferSize = BUFFERSIZE, uint32_t msTimeout = TIMEOUT)
-        : m_bufferSize(bufferSize), m_consumer(0), m_producer(0), m_consumeTimeout(msTimeout)
+    RingChunkBuffer(size_t bufferSize = BUFFERSIZE, size_t msTimeout = TIMEOUT)
+        : m_bufferSize(bufferSize), m_consumer(0), m_producer(0), m_writeToDisk(0), m_emptyChunk(bufferSize - 1), m_consumeTimeout(msTimeout)
     {
         m_ringChunks = std::vector<Chunk>(bufferSize);
-        m_consumeTimeout = std::chrono::microseconds(msTimeout);
     }
 
-    template <typename T>
-    void Produce(T &&event)
+    void Produce(const std::string &logLine)
     {
-        std::unique_lock<std::mutex> lock(m_mtx);
-        m_cvWaitEmptyChunk.wait(lock, [this]()
-                                { return !m_ringChunks[m_producer].m_isFull ||
-                                         ((m_producer + 1) % m_bufferSize != m_consumer); });
-        if (m_ringChunks[m_producer].m_isFull)
+        m_spLock.lock();
+        if (m_ringChunks[m_producer].freeSize() < logLine.size())
         {
+            m_writeToDisk.release();
+            m_emptyChunk.acquire();
             m_producer = (m_producer + 1) % m_bufferSize;
-            m_cvWriteToDisk.notify_one();
         }
-        m_ringChunks[m_producer].Push(event);
+        m_ringChunks[m_producer].Push(logLine);
+        m_spLock.unlock();
     }
-    std::vector<LogEvent> Consume()
-    {
-        bool acquire = false;
-        std::vector<LogEvent> logEvents = {};
 
-        std::unique_lock<std::mutex> lock(m_mtx);
-        acquire = m_cvWriteToDisk.wait_for(lock, m_consumeTimeout, [this]()
-                                           { return m_consumer != m_producer; });
+    std::string Consume()
+    {
+        bool acquire = m_writeToDisk.acquire_for(m_consumeTimeout);
+        std::string logLines;
         if (acquire)
         {
-            lock.unlock();
-            Chunk &chunkBuffer = m_ringChunks[m_consumer];
-            logEvents = chunkBuffer.Extract();
+            logLines = m_ringChunks[m_consumer].Extract();
             m_consumer = (m_consumer + 1) % m_bufferSize;
-            m_cvWaitEmptyChunk.notify_all();
+            m_emptyChunk.release();
         }
         else
         {
-            Chunk &chunkBuffer = m_ringChunks[m_consumer];
-            if (chunkBuffer.m_used > 0)
+            m_spLock.lock();
+            if (m_consumer == m_producer)
             {
-                logEvents = chunkBuffer.Extract();
+                Chunk &chunkBuffer = m_ringChunks[m_consumer];
+
+                if (chunkBuffer.m_used > 0)
+                {
+                    logLines = chunkBuffer.Extract();
+                }
             }
+            m_spLock.unlock();
         }
-        return logEvents;
+        return logLines;
     }
 
-    void Flush(LogWriter::ptr writer)
+    std::vector<std::string> Flush()
     {
+        std::vector<std::string> bufferLogs;
+        bufferLogs.reserve(m_bufferSize);
         std::lock_guard<std::mutex> lock(m_mtx);
         while (m_consumer != m_producer)
         {
-            std::vector<LogEvent> LogEvents = m_ringChunks[m_consumer].Extract();
-            for (LogEvent &event : LogEvents)
-            {
-                writer->Log(event);
-            }
+            bufferLogs.push_back(m_ringChunks[m_consumer].Extract());
             m_consumer = (m_consumer + 1) % m_bufferSize;
         }
         if (m_ringChunks[m_consumer].m_used > 0)
         {
-            std::vector<LogEvent> LogEvents = m_ringChunks[m_consumer].Extract();
-            for (LogEvent &event : LogEvents)
-            {
-                writer->Log(event);
-            }
+            bufferLogs.push_back(m_ringChunks[m_consumer].Extract());
         }
+        m_writeToDisk.reset(0);
+        m_emptyChunk.reset(m_bufferSize - 1);
+        return bufferLogs;
     }
 
 private:
-    uint32_t m_bufferSize;
+    size_t m_bufferSize;
     std::vector<Chunk> m_ringChunks;
-    uint32_t m_consumer;
-    uint32_t m_producer;
+    size_t m_consumer;
+    size_t m_producer;
     std::mutex m_mtx;
-    std::condition_variable m_cvWriteToDisk;
-    std::condition_variable m_cvWaitEmptyChunk;
-    std::chrono::microseconds m_consumeTimeout;
+    SpinLock m_spLock;
+    Semaphore m_writeToDisk;
+    Semaphore m_emptyChunk;
+    std::chrono::seconds m_consumeTimeout;
 };
 
 class Logger
@@ -282,19 +291,21 @@ public:
     {
         m_writer = std::make_shared<FileWriter>(file);
     }
-    template <typename T>
-    void WriteLogEvent(T &&event, LogLevel level)
+
+    void WriteMessage(const std::string &message, LogLevel level)
     {
         if (!m_isRunning || level < m_level)
             return;
-        LogEvent localEvent = std::forward<T>(event);
-        localEvent.m_level = level;
-        m_ringChunkBuffer.Produce(std::move(localEvent));
+        m_ringChunkBuffer.Produce(message);
     }
 
     void LogFlush()
     {
-        m_ringChunkBuffer.Flush(m_writer);
+        auto bufferLogs = m_ringChunkBuffer.Flush();
+        for (const std::string &bufferLog : bufferLogs)
+        {
+            m_writer->Log(bufferLog);
+        }
     }
 
 private:
@@ -309,11 +320,9 @@ private:
     {
         while (m_isRunning)
         {
-            std::vector<LogEvent> logEvents = m_ringChunkBuffer.Consume();
-            for (LogEvent &event : logEvents)
-            {
-                m_writer->Log(event);
-            }
+            std::string logLines = m_ringChunkBuffer.Consume();
+            if (logLines.size() > 0)
+                m_writer->Log(logLines);
         }
         LogFlush();
     }
@@ -333,9 +342,15 @@ private:
     std::atomic<bool> m_isRunning;
 };
 
-#define MAKE_LOG_EVENT(fmt, ...) LogEvent((fmt), __FILE__, __LINE__, ##__VA_ARGS__)
-#define LOG_BASE(fmt, level, ...) Logger::getInstance().WriteLogEvent(MAKE_LOG_EVENT(fmt, ##__VA_ARGS__), level);
-#define LOG_DEBUG(fmt, ...) LOG_BASE(fmt, LogLevel::DEBUG, ##__VA_ARGS__)
-#define LOG_INFO(fmt, ...) LOG_BASE(fmt, LogLevel::INFO, ##__VA_ARGS__)
-#define LOG_WARN(fmt, ...) LOG_BASE(fmt, LogLevel::WARN, ##__VA_ARGS__)
-#define LOG_ERROR(fmt, ...) LOG_BASE(fmt, LogLevel::ERROR, ##__VA_ARGS__)
+#define FORMAT_LOGMESSAGE(fmt, ...) FormatLogMessage(fmt, ##__VA_ARGS__)
+#define FORMAT_LOGLINE(fmtted, level) \
+    fmt::format("[{}] [{}] [{}:{}]:{}\n", Timestamp::Now().ToString(), LogLevelToString(level), __FUNCTION__, __LINE__, fmtted)
+#define LOG_BASE(msg, level) Logger::getInstance().WriteMessage(msg, level)
+#define LOG_DEBUG(fmt, ...) Logger::getInstance().WriteMessage(FORMAT_LOGLINE(FORMAT_LOGMESSAGE(fmt, ##__VA_ARGS__), DEBUG), DEBUG)
+#define LOG_INFO(fmt, ...) Logger::getInstance().WriteMessage(FORMAT_LOGLINE(FORMAT_LOGMESSAGE(fmt, ##__VA_ARGS__), INFO), INFO)
+#define LOG_WARN(fmt, ...) Logger::getInstance().WriteMessage(FORMAT_LOGLINE(FORMAT_LOGMESSAGE(fmt, ##__VA_ARGS__), WARN), WARN)
+#define LOG_ERROR(fmt, ...) Logger::getInstance().WriteMessage(FORMAT_LOGLINE(FORMAT_LOGMESSAGE(fmt, ##__VA_ARGS__), ERROR), ERROR)
+#define SET_Console() Logger::getInstance().SetConsoleWriter()
+#define SET_LOGFILE(file) Logger::getInstance().SetFileWriter(file)
+#define SET_LOGLEVEL(level) Logger::getInstance().SetLogLevel(level)
+#define LOG_FLUSH() Logger::getInstance().LogFlush()

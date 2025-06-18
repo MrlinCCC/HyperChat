@@ -8,10 +8,8 @@ TEST(TestLog, ConsoleLogTest)
     Logger &logger = Logger::getInstance();
     logger.SetConsoleWriter();
     std::streambuf *oldCoutStreamBuf = std::cout.rdbuf();
-    std::streambuf *oldCerrStreamBuf = std::cerr.rdbuf();
     std::stringstream ss;
     std::cout.rdbuf(ss.rdbuf());
-    std::cerr.rdbuf(ss.rdbuf());
     logger.SetLogLevel(DEBUG);
     LOG_DEBUG(",./");
     LOG_INFO("abc");
@@ -33,9 +31,8 @@ TEST(TestLog, ConsoleLogTest)
     LOG_WARN("123");
     LOG_ERROR("/*-");
 
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    LOG_FLUSH();
     std::cout.rdbuf(oldCoutStreamBuf);
-    std::cout.rdbuf(oldCerrStreamBuf);
 
     std::string line;
     std::getline(ss, line);
@@ -101,7 +98,7 @@ TEST(TestLog, FileLogTest)
     LOG_WARN("123");
     LOG_ERROR("/*-");
 
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    LOG_FLUSH();
 
     std::ifstream logFileStream(logFile);
     ASSERT_TRUE(logFileStream.is_open());
@@ -159,7 +156,7 @@ TEST(TestLog, FormatLogTest)
     LOG_INFO("Mix: int=%d, float=%.1f, char=%c, str=%s", 7, 2.718, 'Z', "mix");
     LOG_INFO("Percent sign: %%");
 
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    LOG_FLUSH();
 
     std::ifstream logFileStream(logFile);
     ASSERT_TRUE(logFileStream.is_open());
