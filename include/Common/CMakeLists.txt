@@ -1,6 +1,4 @@
-add_library(Logger INTERFACE)
+add_library(Common INTERFACE Logger.hpp ThreadPool.hpp)
 
-find_package(fmt CONFIG REQUIRED)
-target_link_libraries(Logger INTERFACE fmt::fmt)
-
-target_include_directories(Logger INTERFACE .)
+target_include_directories(Common INTERFACE .)
+target_link_libraries(Common INTERFACE fmt::fmt)

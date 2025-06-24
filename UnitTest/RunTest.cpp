@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "TestCommon/TestLog.hpp"
+#include "TestCommon/TestThreadPool.hpp"
 #include <iostream>
 
 int main(int argc, char **argv)

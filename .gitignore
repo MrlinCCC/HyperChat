@@ -62,6 +62,7 @@ Makefile
 *.aps
 *.vspscc
 *.vssscc
+.vs/
 
 # ======================
 # 日志 & 临时文件

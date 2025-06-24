@@ -5,12 +5,9 @@
 #include <Timestamp.hpp>
 #include <mutex>
 #include <fstream>
-#include <sstream>
-#include <queue>
 #include <condition_variable>
 #include <fmt/core.h>
 #include <fmt/printf.h>
-#include <array>
 #include "Semaphore.hpp"
 #include "SpinLock.hpp"
 
@@ -316,6 +313,8 @@ private:
     };
     Logger(const Logger &) = delete;
     Logger &operator=(const Logger &) = delete;
+    Logger(const Logger &&) = delete;
+    Logger &operator=(const Logger &&) = delete;
     void ProcessLog()
     {
         while (m_isRunning)

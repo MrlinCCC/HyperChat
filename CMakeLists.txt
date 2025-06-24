@@ -13,8 +13,12 @@ target_include_directories(HyperChatServer PUBLIC include/ChatServer)
 target_include_directories(HyperChatClient PUBLIC include/ChatClient)
 
 find_package(asio CONFIG REQUIRED)
-target_link_libraries(HyperChatServer PRIVATE asio::asio)
-target_link_libraries(HyperChatClient PRIVATE asio::asio)
+find_package(fmt CONFIG REQUIRED)
+find_package(jsoncpp CONFIG REQUIRED)
+target_link_libraries(HyperChatServer PRIVATE asio::asio fmt::fmt jsoncpp_lib)
+target_link_libraries(HyperChatClient PRIVATE asio::asio fmt::fmt jsoncpp_lib)
+
+
 
 add_subdirectory(include/Common)
 add_subdirectory(UnitTest)
