@@ -1,5 +1,5 @@
 #pragma once
-#include <Logger.hpp>
+#include <Logger.h>
 #include <string>
 #include <chrono>
 #include <filesystem>

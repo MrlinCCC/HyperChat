@@ -1,5 +1,5 @@
 #pragma once
-#include <Logger.hpp>
+#include <Logger.h>
 #include "gtest/gtest.h"
 #include <filesystem>
 
@@ -25,7 +25,7 @@ TEST(TestLog, ConsoleLogTest)
     LOG_INFO("abc");
     LOG_WARN("123");
     LOG_ERROR("/*-");
-    logger.SetLogLevel(ERROR);
+    logger.SetLogLevel(ERR);
     LOG_DEBUG(",./");
     LOG_INFO("abc");
     LOG_WARN("123");
@@ -46,7 +46,7 @@ TEST(TestLog, ConsoleLogTest)
     EXPECT_NE(line.find(LogLevelToString(WARN)), std::string::npos);
     std::getline(ss, line);
     EXPECT_NE(line.find("/*-"), std::string::npos);
-    EXPECT_NE(line.find(LogLevelToString(ERROR)), std::string::npos);
+    EXPECT_NE(line.find(LogLevelToString(ERR)), std::string::npos);
 
     std::getline(ss, line);
     EXPECT_NE(line.find("abc"), std::string::npos);
@@ -56,18 +56,18 @@ TEST(TestLog, ConsoleLogTest)
     EXPECT_NE(line.find(LogLevelToString(WARN)), std::string::npos);
     std::getline(ss, line);
     EXPECT_NE(line.find("/*-"), std::string::npos);
-    EXPECT_NE(line.find(LogLevelToString(ERROR)), std::string::npos);
+    EXPECT_NE(line.find(LogLevelToString(ERR)), std::string::npos);
 
     std::getline(ss, line);
     EXPECT_NE(line.find("123"), std::string::npos);
     EXPECT_NE(line.find(LogLevelToString(WARN)), std::string::npos);
     std::getline(ss, line);
     EXPECT_NE(line.find("/*-"), std::string::npos);
-    EXPECT_NE(line.find(LogLevelToString(ERROR)), std::string::npos);
+    EXPECT_NE(line.find(LogLevelToString(ERR)), std::string::npos);
 
     std::getline(ss, line);
     EXPECT_NE(line.find("/*-"), std::string::npos);
-    EXPECT_NE(line.find(LogLevelToString(ERROR)), std::string::npos);
+    EXPECT_NE(line.find(LogLevelToString(ERR)), std::string::npos);
 }
 
 TEST(TestLog, FileLogTest)
@@ -92,7 +92,7 @@ TEST(TestLog, FileLogTest)
     LOG_INFO("abc");
     LOG_WARN("123");
     LOG_ERROR("/*-");
-    logger.SetLogLevel(ERROR);
+    logger.SetLogLevel(ERR);
     LOG_DEBUG(",./");
     LOG_INFO("abc");
     LOG_WARN("123");
@@ -115,7 +115,7 @@ TEST(TestLog, FileLogTest)
     EXPECT_NE(line.find(LogLevelToString(WARN)), std::string::npos);
     std::getline(logFileStream, line);
     EXPECT_NE(line.find("/*-"), std::string::npos);
-    EXPECT_NE(line.find(LogLevelToString(ERROR)), std::string::npos);
+    EXPECT_NE(line.find(LogLevelToString(ERR)), std::string::npos);
 
     std::getline(logFileStream, line);
     EXPECT_NE(line.find("abc"), std::string::npos);
@@ -125,18 +125,18 @@ TEST(TestLog, FileLogTest)
     EXPECT_NE(line.find(LogLevelToString(WARN)), std::string::npos);
     std::getline(logFileStream, line);
     EXPECT_NE(line.find("/*-"), std::string::npos);
-    EXPECT_NE(line.find(LogLevelToString(ERROR)), std::string::npos);
+    EXPECT_NE(line.find(LogLevelToString(ERR)), std::string::npos);
 
     std::getline(logFileStream, line);
     EXPECT_NE(line.find("123"), std::string::npos);
     EXPECT_NE(line.find(LogLevelToString(WARN)), std::string::npos);
     std::getline(logFileStream, line);
     EXPECT_NE(line.find("/*-"), std::string::npos);
-    EXPECT_NE(line.find(LogLevelToString(ERROR)), std::string::npos);
+    EXPECT_NE(line.find(LogLevelToString(ERR)), std::string::npos);
 
     std::getline(logFileStream, line);
     EXPECT_NE(line.find("/*-"), std::string::npos);
-    EXPECT_NE(line.find(LogLevelToString(ERROR)), std::string::npos);
+    EXPECT_NE(line.find(LogLevelToString(ERR)), std::string::npos);
 }
 
 TEST(TestLog, FormatLogTest)

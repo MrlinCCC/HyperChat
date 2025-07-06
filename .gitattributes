@@ -1,0 +1,30 @@
+* text=auto eol=lf
+
+
+*.c       text
+*.cpp     text
+*.h       text
+*.hpp     text
+*.cc      text
+*.md      text
+*.txt     text
+*.json    text
+*.xml     text
+*.yml     text
+*.yaml    text
+*.sh      text
+*.bat     text eol=crlf 
+
+
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.gif     binary
+*.ico     binary
+*.zip     binary
+*.gz      binary
+*.bz2     binary
+*.exe     binary
+*.dll     binary
+*.so      binary
+*.dylib   binary

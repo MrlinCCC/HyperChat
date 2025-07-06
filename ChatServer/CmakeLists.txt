@@ -1,0 +1,12 @@
+add_library(HyperChatServerLib STATIC
+    src/ChatServer.cpp 
+    src/Session.cpp 
+    src/ChatService.cpp
+)
+
+target_include_directories(HyperChatServerLib PUBLIC include entity utils)
+
+target_link_libraries(HyperChatServerLib PUBLIC asio::asio fmt::fmt jsoncpp_lib Common)
+
+add_executable(HyperChatServer RunServer.cpp)
+target_link_libraries(HyperChatServer PRIVATE HyperChatServerLib)

@@ -1,9 +1,9 @@
-add_executable(UnitTest RunTest.cpp TestCommon/TestLog.hpp TestCommon/TestThreadPool.hpp)
+add_executable(UnitTest RunTest.cpp)
 
 find_package(GTest CONFIG REQUIRED)
 
 target_link_libraries(UnitTest PRIVATE GTest::gtest GTest::gtest_main)
-target_link_libraries(UnitTest PRIVATE Common)
+target_link_libraries(UnitTest PRIVATE Common HyperChatServerLib)
 
 # enable_testing()
 

@@ -1,0 +1,19 @@
+"filename", "language", "CMake", "C++", "comment", "blank", "total"
+"c:\Users\linC\app\programming\C++ Project\HyperChat\ChatClient\CmakeLists.txt", "CMake", -7, 0, 0, -4, -11
+"c:\Users\linC\app\programming\C++ Project\HyperChat\ChatClient\RunClient.cpp", "C++", 0, -10, 0, -1, -11
+"c:\Users\linC\app\programming\C++ Project\HyperChat\ChatClient\include\ChatClient.h", "C++", 0, -39, 0, -4, -43
+"c:\Users\linC\app\programming\C++ Project\HyperChat\ChatClient\src\ChatClient.cpp", "C++", 0, -135, 0, -7, -142
+"c:\Users\linC\app\programming\C++ Project\HyperChat\Common\CMakeLists.txt", "CMake", 10, 0, 0, 1, 11
+"c:\Users\linC\app\programming\C++ Project\HyperChat\Common\include\Logger.h", "C++", 0, 152, 0, 23, 175
+"c:\Users\linC\app\programming\C++ Project\HyperChat\Common\include\ProtocolMessage.h", "C++", 0, 56, 2, 8, 66
+"c:\Users\linC\app\programming\C++ Project\HyperChat\Common\include\Semaphore.h", "C++", 0, 30, 0, 13, 43
+"c:\Users\linC\app\programming\C++ Project\HyperChat\Common\include\SpinLock.h", "C++", 0, 14, 0, 5, 19
+"c:\Users\linC\app\programming\C++ Project\HyperChat\Common\include\ThreadPool.h", "C++", 0, 44, 0, 10, 54
+"c:\Users\linC\app\programming\C++ Project\HyperChat\Common\include\Timestamp.h", "C++", 0, 13, 0, 4, 17
+"c:\Users\linC\app\programming\C++ Project\HyperChat\Common\src\Logger.cpp", "C++", 0, 200, 0, 28, 228
+"c:\Users\linC\app\programming\C++ Project\HyperChat\Common\src\ProtocolMessage.cpp", "C++", 0, 49, 0, 9, 58
+"c:\Users\linC\app\programming\C++ Project\HyperChat\Common\src\Semaphore.cpp", "C++", 0, 64, 0, 10, 74
+"c:\Users\linC\app\programming\C++ Project\HyperChat\Common\src\Spinlock.cpp", "C++", 0, 11, 1, 3, 15
+"c:\Users\linC\app\programming\C++ Project\HyperChat\Common\src\ThreadPool.cpp", "C++", 0, 45, 0, 6, 51
+"c:\Users\linC\app\programming\C++ Project\HyperChat\Common\src\Timestamp.cpp", "C++", 0, 32, 0, 7, 39
+"Total", "-", 3, 526, 3, 111, 643

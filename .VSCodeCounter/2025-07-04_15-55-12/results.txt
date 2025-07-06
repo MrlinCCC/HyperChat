@@ -1,0 +1,41 @@
+Date : 2025-07-04 15:55:12
+Directory : c:\Users\linC\app\programming\C++ Project\HyperChat\Common
+Total : 13 files,  720 codes, 3 comments, 127 blanks, all 850 lines
+
+Languages
++----------+------------+------------+------------+------------+------------+
+| language | files      | code       | comment    | blank      | total      |
++----------+------------+------------+------------+------------+------------+
+| C++      |         12 |        710 |          3 |        126 |        839 |
+| CMake    |          1 |         10 |          0 |          1 |         11 |
++----------+------------+------------+------------+------------+------------+
+
+Directories
++--------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                                 | files      | code       | comment    | blank      | total      |
++--------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                                    |         13 |        720 |          3 |        127 |        850 |
+| . (Files)                                                                            |          1 |         10 |          0 |          1 |         11 |
+| include                                                                              |          6 |        309 |          2 |         63 |        374 |
+| src                                                                                  |          6 |        401 |          1 |         63 |        465 |
++--------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++--------------------------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| filename                                                                             | language | code       | comment    | blank      | total      |
++--------------------------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| c:\Users\linC\app\programming\C++ Project\HyperChat\Common\CMakeLists.txt            | CMake    |         10 |          0 |          1 |         11 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\Common\include\Logger.h          | C++      |        152 |          0 |         23 |        175 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\Common\include\ProtocolMessage.h | C++      |         56 |          2 |          8 |         66 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\Common\include\Semaphore.h       | C++      |         30 |          0 |         13 |         43 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\Common\include\SpinLock.h        | C++      |         14 |          0 |          5 |         19 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\Common\include\ThreadPool.h      | C++      |         44 |          0 |         10 |         54 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\Common\include\Timestamp.h       | C++      |         13 |          0 |          4 |         17 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\Common\src\Logger.cpp            | C++      |        200 |          0 |         28 |        228 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\Common\src\ProtocolMessage.cpp   | C++      |         49 |          0 |          9 |         58 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\Common\src\Semaphore.cpp         | C++      |         64 |          0 |         10 |         74 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\Common\src\Spinlock.cpp          | C++      |         11 |          1 |          3 |         15 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\Common\src\ThreadPool.cpp        | C++      |         45 |          0 |          6 |         51 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\Common\src\Timestamp.cpp         | C++      |         32 |          0 |          7 |         39 |
+| Total                                                                                |          |        720 |          3 |        127 |        850 |
++--------------------------------------------------------------------------------------+----------+------------+------------+------------+------------+

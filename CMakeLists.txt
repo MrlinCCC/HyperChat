@@ -6,20 +6,12 @@ set(CMAKE_CXX_STANDARD 17)
 add_compile_definitions(PROJECT_ROOT="${CMAKE_SOURCE_DIR}")
 add_compile_definitions(PROJECT_LOG_ROOT="${CMAKE_SOURCE_DIR}/log")
 
-add_executable(HyperChatServer app/RunServer.cpp src/ChatServer/ChatServerCore.cpp)
-add_executable(HyperChatClient app/RunClient.cpp src/ChatClient/ChatClientCore.cpp)
-
-target_include_directories(HyperChatServer PUBLIC include/ChatServer)
-target_include_directories(HyperChatClient PUBLIC include/ChatClient)
-
 find_package(asio CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(jsoncpp CONFIG REQUIRED)
-target_link_libraries(HyperChatServer PRIVATE asio::asio fmt::fmt jsoncpp_lib)
-target_link_libraries(HyperChatClient PRIVATE asio::asio fmt::fmt jsoncpp_lib)
 
-
-
-add_subdirectory(include/Common)
+add_subdirectory(Common)
+add_subdirectory(ChatServer)
+add_subdirectory(ChatClient)
 add_subdirectory(UnitTest)
 add_subdirectory(Benchmark)

@@ -1,0 +1,84 @@
+Date : 2025-07-01 16:58:23
+Directory : c:\Users\linC\app\programming\C++ Project\HyperChat
+Total : 38 files,  1397 codes, 3 comments, 213 blanks, all 1613 lines
+
+Languages
++----------+------------+------------+------------+------------+------------+
+| language | files      | code       | comment    | blank      | total      |
++----------+------------+------------+------------+------------+------------+
+| C++      |         29 |      1,286 |          3 |        181 |      1,470 |
+| Markdown |          1 |         43 |          0 |         13 |         56 |
+| CMake    |          6 |         43 |          0 |         17 |         60 |
+| JSON     |          2 |         25 |          0 |          2 |         27 |
++----------+------------+------------+------------+------------+------------+
+
+Directories
++--------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                                       | files      | code       | comment    | blank      | total      |
++--------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                                          |         38 |      1,397 |          3 |        213 |      1,613 |
+| . (Files)                                                                                  |          4 |         81 |          0 |         19 |        100 |
+| Benchmark                                                                                  |          3 |         63 |          0 |          8 |         71 |
+| ChatClient                                                                                 |          4 |        188 |          0 |         15 |        203 |
+| ChatClient (Files)                                                                         |          2 |         14 |          0 |          4 |         18 |
+| ChatClient\include                                                                         |          1 |         39 |          0 |          4 |         43 |
+| ChatClient\src                                                                             |          1 |        135 |          0 |          7 |        142 |
+| ChatServer                                                                                 |         10 |        266 |          0 |         36 |        302 |
+| ChatServer (Files)                                                                         |          2 |         45 |          0 |          6 |         51 |
+| ChatServer\entity                                                                          |          1 |          8 |          0 |          2 |         10 |
+| ChatServer\include                                                                         |          3 |         76 |          0 |         13 |         89 |
+| ChatServer\src                                                                             |          3 |        129 |          0 |         14 |        143 |
+| ChatServer\utils                                                                           |          1 |          8 |          0 |          1 |          9 |
+| Common                                                                                     |         13 |        577 |          3 |        106 |        686 |
+| Common (Files)                                                                             |          1 |          7 |          0 |          1 |          8 |
+| Common\include                                                                             |          6 |        249 |          2 |         57 |        308 |
+| Common\src                                                                                 |          6 |        321 |          1 |         48 |        370 |
+| UnitTest                                                                                   |          4 |        222 |          0 |         29 |        251 |
+| UnitTest (Files)                                                                           |          2 |         17 |          0 |          5 |         22 |
+| UnitTest\TestCommon                                                                        |          2 |        205 |          0 |         24 |        229 |
++--------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++--------------------------------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| filename                                                                                   | language | code       | comment    | blank      | total      |
++--------------------------------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| c:\Users\linC\app\programming\C++ Project\HyperChat\Benchmark\BenchmarkLog.hpp             | C++      |         39 |          0 |          4 |         43 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\Benchmark\CMakeLists.txt               | CMake    |          4 |          0 |          2 |          6 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\Benchmark\RunBenchmark.cpp             | C++      |         20 |          0 |          2 |         22 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\CMakeLists.txt                         | CMake    |         13 |          0 |          4 |         17 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\CMakePresets.json                      | JSON     |         20 |          0 |          1 |         21 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatClient\CmakeLists.txt              | CMake    |          4 |          0 |          3 |          7 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatClient\RunClient.cpp               | C++      |         10 |          0 |          1 |         11 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatClient\include\ChatClient.h        | C++      |         39 |          0 |          4 |         43 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatClient\src\ChatClient.cpp          | C++      |        135 |          0 |          7 |        142 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatServer\CmakeLists.txt              | CMake    |          9 |          0 |          3 |         12 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatServer\RunServer.cpp               | C++      |         36 |          0 |          3 |         39 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatServer\entity\User.hpp             | C++      |          8 |          0 |          2 |         10 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatServer\include\ChatRoom.h          | C++      |         15 |          0 |          2 |         17 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatServer\include\ChatServer.h        | C++      |         30 |          0 |          3 |         33 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatServer\include\Session.h           | C++      |         31 |          0 |          8 |         39 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatServer\src\ChatRoom.cpp            | C++      |          1 |          0 |          0 |          1 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatServer\src\ChatServer.cpp          | C++      |         43 |          0 |          6 |         49 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatServer\src\Session.cpp             | C++      |         85 |          0 |          8 |         93 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatServer\utils\IdGenerator.hpp       | C++      |          8 |          0 |          1 |          9 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\Common\CMakeLists.txt                  | CMake    |          7 |          0 |          1 |          8 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\Common\include\Logger.h                | C++      |        120 |          0 |         23 |        143 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\Common\include\ProtocolMessage.h       | C++      |         39 |          2 |          7 |         48 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\Common\include\Semaphore.h             | C++      |         17 |          0 |          8 |         25 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\Common\include\SpinLock.h              | C++      |         14 |          0 |          5 |         19 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\Common\include\ThreadPool.h            | C++      |         46 |          0 |         10 |         56 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\Common\include\Timestamp.h             | C++      |         13 |          0 |          4 |         17 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\Common\src\Logger.cpp                  | C++      |        162 |          0 |         19 |        181 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\Common\src\ProtocolMessage.cpp         | C++      |         47 |          0 |          7 |         54 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\Common\src\Semaphore.cpp               | C++      |         31 |          0 |          6 |         37 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\Common\src\Spinlock.cpp                | C++      |         11 |          1 |          3 |         15 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\Common\src\ThreadPool.cpp              | C++      |         38 |          0 |          6 |         44 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\Common\src\Timestamp.cpp               | C++      |         32 |          0 |          7 |         39 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\README.md                              | Markdown |         43 |          0 |         13 |         56 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\UnitTest\CMakeLists.txt                | CMake    |          6 |          0 |          4 |         10 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\UnitTest\RunTest.cpp                   | C++      |         11 |          0 |          1 |         12 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\UnitTest\TestCommon\TestLog.hpp        | C++      |        169 |          0 |         20 |        189 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\UnitTest\TestCommon\TestThreadPool.hpp | C++      |         36 |          0 |          4 |         40 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\vcpkg.json                             | JSON     |          5 |          0 |          1 |          6 |
+| Total                                                                                      |          |      1,397 |          3 |        213 |      1,613 |
++--------------------------------------------------------------------------------------------+----------+------------+------------+------------+------------+
