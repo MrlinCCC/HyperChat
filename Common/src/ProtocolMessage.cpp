@@ -57,3 +57,24 @@ ProtocolMessage ProtocolMessage::DeSerialize(const MessageHeader &header, const 
     }
     return message;
 }
+
+MessageBodyFactory::MessageBodyFactory()
+{
+    Register(BodyType::JSON, []()
+             { return std::make_shared<JsonBody>(); });
+}
+
+void MessageBodyFactory::Register(BodyType type, Creator creator)
+{
+    m_creator[BodyType::JSON] = std::move(creator);
+}
+
+MessageBody::ptr MessageBodyFactory::Create(BodyType type)
+{
+    auto it = m_creator.find(type);
+    if (it != m_creator.end())
+    {
+        it->second();
+    }
+    return nullptr;
+}

@@ -20,4 +20,5 @@ private:
     ProtocolMessage HandleChatService(const ProtocolMessage &message) const;
 
     ExecuteServiceCb m_exeServiceCb;
+    std::unordered_map<MessageType, ExecuteServiceCb> m_serviceHandlerMap;
 };

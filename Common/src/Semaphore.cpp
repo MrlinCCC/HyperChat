@@ -1,74 +1,91 @@
 #include "Semaphore.h"
 
-CountSemaphore::CountSemaphore(size_t init) : m_count(init)
+CountSemaphore::CountSemaphore(size_t init)
 {
-}
-
-void CountSemaphore::acquire()
-{
-    std::unique_lock<std::mutex> lock(m_mtx);
-    m_cv.wait(lock, [this]()
-              { return m_count > 0; });
-    m_count--;
-}
-
-bool CountSemaphore::acquire_for(std::chrono::seconds timeout)
-{
-    std::unique_lock<std::mutex> lock(m_mtx);
-    bool acquire = m_cv.wait_for(lock, timeout, [this]()
-                                 { return m_count > 0; });
-    if (acquire)
-        m_count--;
-    return acquire;
-}
-
-void CountSemaphore::release()
-{
-    std::lock_guard<std::mutex> lock(m_mtx);
-    m_count++;
-    m_cv.notify_one();
-}
-
-void CountSemaphore::reset(size_t init)
-{
-    std::lock_guard<std::mutex> lock(m_mtx);
-    m_count = init;
-}
-
-BinarySemaphore::BinarySemaphore(size_t init) : m_count(init > 0 ? 1 : 0)
-{
-}
-
-void BinarySemaphore::acquire()
-{
-    std::unique_lock<std::mutex> lock(m_mtx);
-    m_cv.wait(lock, [this]
-              { return m_count > 0; });
-    m_count = 0;
-}
-
-bool BinarySemaphore::acquire_for(std::chrono::seconds timeout)
-{
-    std::unique_lock<std::mutex> lock(m_mtx);
-    if (!m_cv.wait_for(lock, timeout, [this]
-                       { return m_count > 0; }))
-        return false;
-    m_count = 0;
-    return true;
-}
-
-void BinarySemaphore::release()
-{
-    std::lock_guard<std::mutex> lock(m_mtx);
-    if (m_count == 0)
+#ifdef PLATFORM_WINDOWS
+    m_handle = CreateSemaphore(nullptr, static_cast<LONG>(init), LONG_MAX, nullptr);
+    if (!m_handle)
     {
-        m_count = 1;
-        m_cv.notify_one();
+        throw std::runtime_error("CreateSemaphore failed!");
     }
+#else
+    if (sem_init(&m_sem, 0, init) != 0)
+    {
+        throw std::runtime_error("sem_init failed!");
+    }
+#endif
 }
 
-void BinarySemaphore::reset(size_t init)
+CountSemaphore::~CountSemaphore()
 {
-    std::lock_guard<std::mutex> lock(m_mtx);
-    m_count = (init > 0 ? 1 : 0);
+#ifdef PLATFORM_WINDOWS
+    if (m_handle)
+    {
+        CloseHandle(m_handle);
+        m_handle = nullptr;
+    }
+#else
+    sem_destroy(&m_sem);
+#endif
+}
+
+void CountSemaphore::Acquire()
+{
+#ifdef PLATFORM_WINDOWS
+    DWORD result = WaitForSingleObject(m_handle, INFINITE);
+    if (result != WAIT_OBJECT_0)
+    {
+        throw std::runtime_error("WaitForSingleObject failed!");
+    }
+#else
+    while (sem_wait(&m_sem) == -1 && errno == EINTR)
+    {
+    }
+#endif
+}
+
+bool CountSemaphore::Acquire_for(std::chrono::seconds timeout)
+{
+#ifdef PLATFORM_WINDOWS
+    DWORD result = WaitForSingleObject(m_handle, static_cast<DWORD>(timeout.count() * 1000));
+    if (result == WAIT_OBJECT_0)
+        return true;
+    if (result == WAIT_TIMEOUT)
+        return false;
+    throw std::runtime_error("WaitForSingleObject failed!");
+#else
+    timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    ts.tv_sec += timeout.count();
+    while (true)
+    {
+        if (sem_timedwait(&m_sem, &ts) == 0)
+            return true;
+        if (errno == EINTR)
+            continue;
+        if (errno == ETIMEDOUT)
+            return false;
+        throw std::runtime_error("sem_timedwait failed!");
+    }
+#endif
+}
+
+void CountSemaphore::Release()
+{
+#ifdef PLATFORM_WINDOWS
+    if (!ReleaseSemaphore(m_handle, 1, nullptr))
+    {
+        throw std::runtime_error("ReleaseSemaphore failed!");
+    }
+#else
+    if (sem_post(&m_sem) != 0)
+    {
+        throw std::runtime_error("sem_post failed!");
+    }
+#endif
+}
+
+BinarySemaphore::BinarySemaphore(size_t init)
+    : CountSemaphore(init ? 1 : 0)
+{
 }

@@ -24,5 +24,15 @@ void ChatService::SetExecuteServiceCb(ExecuteServiceCb callback)
 
 ProtocolMessage ChatService::HandleChatService(const ProtocolMessage &message) const
 {
-    return message;
+    MessageType type = message.m_header.m_msgType;
+    auto handlerIt = m_serviceHandlerMap.find(type);
+    if (handlerIt != m_serviceHandlerMap.end())
+    {
+        return handlerIt->second(message);
+    }
+    ProtocolMessage response;
+    response.m_header = message.m_header;
+    response.m_header.m_status = Status::NOT_FOUND;
+    response.p_body = MessageBodyFactory::Instance().Create(response.m_header.m_bodyType);
+    return response;
 }

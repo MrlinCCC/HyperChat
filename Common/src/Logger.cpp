@@ -109,8 +109,8 @@ void RingChunkBuffer::Produce(const std::string &logLine)
     m_spLock.lock();
     if (m_ringChunks[m_producer].freeSize() < logLine.size())
     {
-        m_writeToDisk.release();
-        m_emptyChunk.acquire();
+        m_writeToDisk.Release();
+        m_emptyChunk.Acquire();
         m_producer = (m_producer + 1) % m_bufferSize;
     }
     m_ringChunks[m_producer].Push(logLine);
@@ -119,13 +119,13 @@ void RingChunkBuffer::Produce(const std::string &logLine)
 
 std::string RingChunkBuffer::Consume()
 {
-    bool acquire = m_writeToDisk.acquire_for(m_consumeTimeout);
+    bool acquire = m_writeToDisk.Acquire_for(m_consumeTimeout);
     std::string logLines;
     if (acquire)
     {
         logLines = m_ringChunks[m_consumer].Extract();
         m_consumer = (m_consumer + 1) % m_bufferSize;
-        m_emptyChunk.release();
+        m_emptyChunk.Release();
     }
     else
     {
@@ -151,15 +151,15 @@ std::vector<std::string> RingChunkBuffer::Flush()
     std::lock_guard<std::mutex> lock(m_mtx);
     while (m_consumer != m_producer)
     {
+        m_writeToDisk.Acquire();
         bufferLogs.push_back(m_ringChunks[m_consumer].Extract());
         m_consumer = (m_consumer + 1) % m_bufferSize;
+        m_emptyChunk.Release();
     }
     if (m_ringChunks[m_consumer].m_used > 0)
     {
         bufferLogs.push_back(m_ringChunks[m_consumer].Extract());
     }
-    m_writeToDisk.reset(0);
-    m_emptyChunk.reset(m_bufferSize - 1);
     return bufferLogs;
 }
 

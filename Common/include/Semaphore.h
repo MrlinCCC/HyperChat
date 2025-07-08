@@ -1,43 +1,44 @@
 #pragma once
-
-#include <condition_variable>
+#include <stdexcept>
 #include <chrono>
-#include <mutex>
+
+#if defined(_WIN32) || defined(_WIN64)
+#define PLATFORM_WINDOWS
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#else
+#define PLATFORM_POSIX
+#include <semaphore.h>
+#include <ctime>
+#include <errno.h>
+#endif
 
 class CountSemaphore
 {
 public:
-    explicit CountSemaphore(size_t init = 0);
+    CountSemaphore(size_t init = 0);
 
-    void acquire();
+    ~CountSemaphore();
 
-    bool acquire_for(std::chrono::seconds timeout);
+    CountSemaphore(const CountSemaphore &) = delete;
+    CountSemaphore &operator=(const CountSemaphore &) = delete;
 
-    void release();
+    void Acquire();
 
-    void reset(size_t init = 0);
+    bool Acquire_for(std::chrono::seconds timeout);
+
+    void Release();
 
 private:
-    std::mutex m_mtx;
-    std::condition_variable m_cv;
-    size_t m_count;
+#ifdef PLATFORM_WINDOWS
+    HANDLE m_handle = nullptr;
+#else
+    sem_t m_sem;
+#endif
 };
 
-class BinarySemaphore
+class BinarySemaphore : public CountSemaphore
 {
 public:
-    explicit BinarySemaphore(size_t init = 0);
-
-    void acquire();
-
-    bool acquire_for(std::chrono::seconds timeout);
-
-    void release();
-
-    void reset(size_t init = 0);
-
-private:
-    std::mutex m_mtx;
-    std::condition_variable m_cv;
-    size_t m_count;
+    BinarySemaphore(size_t init = 0);
 };

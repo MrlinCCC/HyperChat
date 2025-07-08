@@ -12,7 +12,6 @@
 
 #define INIT_SESSION_BUCKET_SIZE 1024
 #define INIT_THREAD_NUM 4
-#define INIT_ACCEPT_MAX_NUM 10
 #define SERVER_BACKLOG 128
 
 class ChatServer
@@ -24,6 +23,7 @@ public:
     void AsyncAcceptConnection();
     void HandleRequest(const std::shared_ptr<Session> &session, const ProtocolMessage &message);
     void Shutdown();
+    size_t GetSessionCount();
 
 private:
     asio::io_context m_ioContext;

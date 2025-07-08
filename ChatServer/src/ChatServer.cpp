@@ -41,12 +41,9 @@ void ChatServer::AsyncAcceptConnection()
 
 void ChatServer::Run()
 {
-    for (int i = 0; i < INIT_ACCEPT_MAX_NUM; ++i)
-    {
-        AsyncAcceptConnection();
-    }
+    AsyncAcceptConnection();
     m_ioContext.run();
-    m_allAsyncFinish.release();
+    m_allAsyncFinish.Release();
 }
 
 void ChatServer::HandleRequest(const std::shared_ptr<Session> &session, const ProtocolMessage &message)
@@ -78,5 +75,11 @@ void ChatServer::Shutdown()
         session->CloseSession();
     }
     m_workGuard.reset();
-    m_allAsyncFinish.acquire();
+    m_allAsyncFinish.Acquire();
+}
+
+size_t ChatServer::GetSessionCount()
+{
+    std::lock_guard<std::mutex> lock(m_sessionsMtx);
+    return m_sessions.size();
 }

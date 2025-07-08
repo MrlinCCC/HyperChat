@@ -1,18 +1,44 @@
 #pragma once
 #include <iostream>
 #include <json/json.h>
+#include <unordered_map>
+#include <functional>
 
-enum BodyType : uint16_t
+enum BodyType : uint8_t
 {
     JSON,
     //...
 };
 
-enum MessageType : uint16_t
+enum MessageType : uint8_t
 {
+    REGISTER,
     LOGIN,
-    CHAT,
-    //...
+    LOGOUT,
+    ADD_FRIEND,
+    ONE_CHAT,
+    GROUP_CHAT,
+    CREATE_GROUP,
+    ADD_GROUP
+};
+
+enum class Status : uint8_t
+{
+    SUCCESS,
+
+    INVALID_REQUEST,
+    UNAUTHORIZED,
+    FORBIDDEN,
+    NOT_FOUND,
+    RATE_LIMITED,
+    UNSUPPORTED_BODYTYPE,
+
+    REQUEST_TIMEOUT,
+    SERVER_ERROR,
+    BAD_GATEWAY,
+    SERVICE_UNAVAILABLE,
+
+    UNKNOWN_ERROR = 255
 };
 
 struct MessageHeader
@@ -22,6 +48,7 @@ struct MessageHeader
     uint32_t m_sessionId;
     BodyType m_bodyType;
     MessageType m_msgType;
+    Status m_status;
 };
 
 struct MessageBody
@@ -49,4 +76,28 @@ struct ProtocolMessage
 
     std::string Serialize();
     static ProtocolMessage DeSerialize(const MessageHeader &header, const std::string &bodyStr);
+};
+
+class MessageBodyFactory
+{
+    using Creator = std::function<MessageBody::ptr()>;
+
+public:
+    static MessageBodyFactory &Instance()
+    {
+        static MessageBodyFactory factory;
+        return factory;
+    }
+    void Register(BodyType type, Creator creator);
+    MessageBody::ptr Create(BodyType type);
+
+private:
+    MessageBodyFactory();
+    ~MessageBodyFactory() = default;
+    MessageBodyFactory(const MessageBodyFactory &) = delete;
+    MessageBodyFactory &operator=(const MessageBodyFactory &) = delete;
+    MessageBodyFactory(const MessageBodyFactory &&) = delete;
+    MessageBodyFactory &operator=(const MessageBodyFactory &&) = delete;
+
+    std::unordered_map<BodyType, Creator> m_creator;
 };
