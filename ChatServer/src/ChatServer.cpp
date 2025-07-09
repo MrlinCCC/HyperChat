@@ -9,7 +9,6 @@ ChatServer::ChatServer(unsigned short port, size_t threadNum)
       m_isRunning(true)
 {
     m_sessions.reserve(INIT_SESSION_BUCKET_SIZE);
-    m_acceptor.listen(SERVER_BACKLOG);
 }
 
 ChatServer::~ChatServer()
@@ -46,18 +45,18 @@ void ChatServer::Run()
     m_allAsyncFinish.Release();
 }
 
-void ChatServer::HandleRequest(const std::shared_ptr<Session> &session, const ProtocolMessage &message)
+void ChatServer::HandleRequest(const std::shared_ptr<Session> &session, const ProtocolMessage &request)
 {
     auto requestSession = session->shared_from_this();
     if (m_isRunning)
     {
         m_workThreadPools.SubmitTask(
-            [this, requestSession](ProtocolMessage message)
+            [this, requestSession](ProtocolMessage request)
             {
-                ProtocolMessage response = ChatService::GetInstance().ExecuteService(message);
+                ProtocolMessage response = ChatService::GetInstance().ExecuteService(request);
                 requestSession->AsyncWriteMessage(response);
             },
-            message);
+            request);
     }
 }
 

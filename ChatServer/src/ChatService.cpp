@@ -11,27 +11,21 @@ ChatService &ChatService::GetInstance()
     return service;
 }
 
-ProtocolMessage ChatService::ExecuteService(const ProtocolMessage &message) const
+ProtocolMessage ChatService::ExecuteService(Session::ptr session, const ProtocolMessage &request) const
 {
-    return m_exeServiceCb(message);
+    return m_exeServiceCb(session, request);
 }
 
-void ChatService::SetExecuteServiceCb(ExecuteServiceCb callback)
+ProtocolMessage ChatService::HandleChatService(Session::ptr session, const ProtocolMessage &request) const
 {
-    if (callback)
-        m_exeServiceCb = callback;
-}
-
-ProtocolMessage ChatService::HandleChatService(const ProtocolMessage &message) const
-{
-    MessageType type = message.m_header.m_msgType;
+    MessageType type = request.m_header.m_msgType;
     auto handlerIt = m_serviceHandlerMap.find(type);
     if (handlerIt != m_serviceHandlerMap.end())
     {
-        return handlerIt->second(message);
+        return handlerIt->second(session, request);
     }
     ProtocolMessage response;
-    response.m_header = message.m_header;
+    response.m_header = request.m_header;
     response.m_header.m_status = Status::NOT_FOUND;
     response.p_body = MessageBodyFactory::Instance().Create(response.m_header.m_bodyType);
     return response;

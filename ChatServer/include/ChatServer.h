@@ -12,7 +12,6 @@
 
 #define INIT_SESSION_BUCKET_SIZE 1024
 #define INIT_THREAD_NUM 4
-#define SERVER_BACKLOG 128
 
 class ChatServer
 {
@@ -21,7 +20,7 @@ public:
     ~ChatServer();
     void Run();
     void AsyncAcceptConnection();
-    void HandleRequest(const std::shared_ptr<Session> &session, const ProtocolMessage &message);
+    void HandleRequest(const Session::ptr &session, const ProtocolMessage &request);
     void Shutdown();
     size_t GetSessionCount();
 
@@ -30,7 +29,7 @@ private:
     asio::executor_work_guard<asio::io_context::executor_type> m_workGuard;
     asio::ip::tcp::acceptor m_acceptor;
 
-    std::unordered_map<uint32_t, std::shared_ptr<Session>> m_sessions;
+    std::unordered_map<uint32_t, Session::ptr> m_sessions;
     std::mutex m_sessionsMtx;
 
     ThreadPool m_workThreadPools;

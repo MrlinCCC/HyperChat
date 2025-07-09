@@ -12,6 +12,7 @@
 class Session : public std::enable_shared_from_this<Session>
 {
 public:
+    using ptr = std::shared_ptr<Session>;
     using SubmitProtocolMessageCallback = std::function<
         void(std::shared_ptr<Session>, const ProtocolMessage &)>;
 
