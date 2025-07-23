@@ -1,35 +1,40 @@
 #pragma once
-#include <ProtocolMessage.h>
+#include <Protocol.h>
 #include <functional>
 #include <Session.h>
+#include "UncopybleAndUnmovable.h"
+#include <Serializer.hpp>
 
-class ChatService
+class ChatService : public UncopybleAndUnmovable
 {
 public:
-    using ExecuteServiceCb = std::function<ProtocolMessage(Session::ptr session, const ProtocolMessage &request)>;
+    using ServiceHandler = std::function<ProtocolMessage::Ptr(const std::shared_ptr<Session> &, const ProtocolMessage::Ptr &)>;
 
     static ChatService &GetInstance();
-    ProtocolMessage ExecuteService(Session::ptr session, const ProtocolMessage &request) const;
-    template <typename F>
-    void SetExecuteServiceCb(F &&callback)
+    template <typename Handler, typename RequestType, typename ResponseType>
+    void RegisterServiceHandler(MethodType type, Handler &&handler)
     {
-        m_exeServiceCb = std::forward<F>(callback);
+        static_assert(std::is_invocable_r_v<ResponseType, Handler, RequestType>,
+                      "Handler must be callable with RequestType and return ResponseType");
+        if (m_serviceHandlerMap.find(type) != m_serviceHandlerMap.end())
+        {
+            LOG_WARN("Handler for this MethodType already exists!");
+            return;
+        }
+        m_serviceHandlerMap.insert(type, [handler]()
+                                   {
+                                    //todo Serialize:ProtocolMessage->RequestType
+                                    ResponseType response = handler(req);
+                                    //todo Serialize:ResponseType->ProtocolMessage
+                                    ProtocolMessage responseMsg;
+                                    return responseMsg; });
     }
 
-    template <typename F>
-    void AddServiceHandler(MessageType type, F &&handler)
-    {
-        m_serviceHandlerMap[type] = std::forward<F>(handler);
-    }
+    ProtocolMessage::Ptr ExecuteService(const std::shared_ptr<Session> &session, const ProtocolMessage::Ptr &ProtocolMsg);
 
 private:
     ChatService();
-    ChatService(const ChatService &) = delete;
-    ChatService &operator=(const ChatService &) = delete;
-    ChatService(const ChatService &&) = delete;
-    ChatService &operator=(const ChatService &&) = delete;
-    ProtocolMessage HandleChatService(Session::ptr session, const ProtocolMessage &request) const;
+    ~ChatService() = default;
 
-    ExecuteServiceCb m_exeServiceCb;
-    std::unordered_map<MessageType, ExecuteServiceCb> m_serviceHandlerMap;
+    std::unordered_map<MethodType, ServiceHandler> m_serviceHandlerMap;
 };

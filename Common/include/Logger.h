@@ -8,13 +8,12 @@
 #include <thread>
 #include <vector>
 #include <atomic>
-#include <memory>
-#include <chrono>
 #include <fmt/core.h>
 #include <fmt/printf.h>
 #include "Timestamp.h"
 #include "Semaphore.h"
 #include "SpinLock.h"
+#include "UncopybleAndUnmovable.h"
 
 enum LogLevel
 {
@@ -48,7 +47,7 @@ std::string FormatLogMessage(const std::string &fmt_str, Args &&...args)
     {
         if (fmt_str.find('%') != std::string::npos)
         {
-            return fmt::sprintf(fmt_str.c_str(), std::forward<Args>(args)...);
+            return fmt::sprintf(fmt_str.data(), std::forward<Args>(args)...);
         }
         else
         {
@@ -131,7 +130,7 @@ private:
     std::chrono::seconds m_consumeTimeout;
 };
 
-class Logger
+class Logger : public UncopybleAndUnmovable
 {
 public:
     static Logger &getInstance();
@@ -146,11 +145,6 @@ public:
 private:
     Logger();
     ~Logger();
-
-    Logger(const Logger &) = delete;
-    Logger &operator=(const Logger &) = delete;
-    Logger(Logger &&) = delete;
-    Logger &operator=(Logger &&) = delete;
 
     void ProcessLog();
 

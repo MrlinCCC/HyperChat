@@ -1,6 +1,4 @@
 #include "Logger.h"
-#include <cstring>
-#include <stdexcept>
 
 void ConsoleWriter::Log(const std::string &logLine)
 {

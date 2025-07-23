@@ -1,0 +1,55 @@
+Date : 2025-07-17 22:32:55
+Directory : c:\Users\linC\app\programming\C++ Project\HyperChat\ChatClient
+Total : 19 files,  -333 codes, -4 comments, -52 blanks, all -389 lines
+
+Languages
++----------+------------+------------+------------+------------+------------+
+| language | files      | code       | comment    | blank      | total      |
++----------+------------+------------+------------+------------+------------+
+| CMake    |          2 |         -4 |          0 |          1 |         -3 |
+| C++      |         17 |       -329 |         -4 |        -53 |       -386 |
++----------+------------+------------+------------+------------+------------+
+
+Directories
++----------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                                         | files      | code       | comment    | blank      | total      |
++----------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                                            |         19 |       -333 |         -4 |        -52 |       -389 |
+| . (Files)                                                                                    |          2 |         17 |          0 |          5 |         22 |
+| ..                                                                                           |         15 |       -524 |         -4 |        -68 |       -596 |
+| ..\ChatServer                                                                                |         15 |       -524 |         -4 |        -68 |       -596 |
+| ..\ChatServer (Files)                                                                        |          2 |        -44 |          0 |         -6 |        -50 |
+| ..\ChatServer\include                                                                        |          8 |       -182 |         -2 |        -32 |       -216 |
+| ..\ChatServer\include (Files)                                                                |          5 |       -151 |         -2 |        -27 |       -180 |
+| ..\ChatServer\include\entity                                                                 |          2 |        -23 |          0 |         -4 |        -27 |
+| ..\ChatServer\include\utils                                                                  |          1 |         -8 |          0 |         -1 |         -9 |
+| ..\ChatServer\src                                                                            |          5 |       -298 |         -2 |        -30 |       -330 |
+| include                                                                                      |          1 |         39 |          0 |          4 |         43 |
+| src                                                                                          |          1 |        135 |          0 |          7 |        142 |
++----------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++----------------------------------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| filename                                                                                     | language | code       | comment    | blank      | total      |
++----------------------------------------------------------------------------------------------+----------+------------+------------+------------+------------+
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatClient\CmakeLists.txt                | CMake    |          7 |          0 |          4 |         11 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatClient\RunClient.cpp                 | C++      |         10 |          0 |          1 |         11 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatClient\include\ChatClient.h          | C++      |         39 |          0 |          4 |         43 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatClient\src\ChatClient.cpp            | C++      |        135 |          0 |          7 |        142 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatServer\CmakeLists.txt                | CMake    |        -11 |          0 |         -3 |        -14 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatServer\RunServer.cpp                 | C++      |        -33 |          0 |         -3 |        -36 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatServer\include\AsyncTcpServer.h      | C++      |        -34 |          0 |         -6 |        -40 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatServer\include\ChatServer.h          | C++      |        -27 |          0 |         -4 |        -31 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatServer\include\ChatService.h         | C++      |        -32 |         -2 |         -5 |        -39 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatServer\include\IoContextPool.h       | C++      |        -24 |          0 |         -4 |        -28 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatServer\include\Session.h             | C++      |        -34 |          0 |         -8 |        -42 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatServer\include\entity\ChatRoom.h     | C++      |        -15 |          0 |         -2 |        -17 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatServer\include\entity\User.hpp       | C++      |         -8 |          0 |         -2 |        -10 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatServer\include\utils\IdGenerator.hpp | C++      |         -8 |          0 |         -1 |         -9 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatServer\src\AsyncTcpServer.cpp        | C++      |       -103 |          0 |         -9 |       -112 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatServer\src\ChatServer.cpp            | C++      |        -42 |         -1 |         -5 |        -48 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatServer\src\ChatService.cpp           | C++      |        -19 |         -1 |         -3 |        -23 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatServer\src\IoContextPool.cpp         | C++      |        -49 |          0 |         -4 |        -53 |
+| c:\Users\linC\app\programming\C++ Project\HyperChat\ChatServer\src\Session.cpp               | C++      |        -85 |          0 |         -9 |        -94 |
+| Total                                                                                        |          |       -333 |         -4 |        -52 |       -389 |
++----------------------------------------------------------------------------------------------+----------+------------+------------+------------+------------+

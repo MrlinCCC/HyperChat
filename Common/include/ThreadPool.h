@@ -7,17 +7,13 @@
 #include <atomic>
 #include <future>
 #include <vector>
+#include "UncopybleAndUnmovable.h"
 
 using Task = std::function<void()>;
 
-class ThreadPool
+class ThreadPool : public UncopybleAndUnmovable
 {
 public:
-    ThreadPool(const ThreadPool &) = delete;
-    ThreadPool &operator=(const ThreadPool &) = delete;
-    ThreadPool(ThreadPool &&) = delete;
-    ThreadPool &operator=(ThreadPool &&) = delete;
-
     explicit ThreadPool(size_t threadNum);
 
     template <typename F, typename... Args>

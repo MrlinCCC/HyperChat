@@ -1,16 +1,22 @@
 #include "Session.h"
-#include "IdGenerator.hpp"
+#include "utils/IdGenerator.hpp"
 
-Session::Session(asio::ip::tcp::socket &&socket, SubmitProtocolMessageCallback callback) : m_socket(std::move(socket)), m_callback(callback)
+Session::Session(asio::ip::tcp::socket &&socket) : m_socket(std::move(socket))
 {
+    m_readBuf.resize(BUFFER_SIZE);
     m_sessionId = generateAutoIncrementId<Session>();
+}
+
+Session::~Session()
+{
+    CloseSession();
 }
 
 void Session::AsyncReadMessage()
 {
     auto self = shared_from_this();
-    asio::async_read(m_socket, asio::buffer(&m_headerBuf, sizeof(MessageHeader)), [self](std::error_code ec, std::size_t /*len*/)
-                     {
+    m_socket.async_read_some(asio::buffer(m_readBuf), [self](std::error_code ec, std::size_t length)
+                             {
                         if (ec == asio::error::eof || ec == asio::error::operation_aborted) {
                             return;
                         }
@@ -20,46 +26,20 @@ void Session::AsyncReadMessage()
                              self->CloseSession();
                              return;
                          }
-                         self->AsyncReadMessageBody(); });
+                         if(!self->m_onMessage){
+                            LOG_WARN("OnMessage Callback is nullptr!");
+                         }
+                         self->m_onMessage(self,length);
+                         self->AsyncReadMessage(); });
 }
 
-void Session::AsyncReadMessageBody()
-{
-    auto self = shared_from_this();
-    m_bodyBuf.resize(m_headerBuf.m_bodyLength);
-    asio::async_read(m_socket, asio::buffer(m_bodyBuf),
-                     [self](const asio::error_code &ec, std::size_t /*len*/)
-                     {
-                         if (ec)
-                         {
-                             LOG_ERROR(ec.message());
-                             self->CloseSession();
-                             return;
-                         }
-                         try
-                         {
-                             ProtocolMessage message = ProtocolMessage::DeSerialize(self->m_headerBuf, self->m_bodyBuf);
-                             if (!self->m_callback)
-                             {
-                                 LOG_WARN("Service callback is nullptr!");
-                             }
-                             self->m_callback(self, message);
-                         }
-                         catch (...)
-                         {
-                             LOG_ERROR("parse Message error");
-                         }
-                         self->AsyncReadMessage();
-                     });
-}
-
-void Session::AsyncWriteMessage(ProtocolMessage &message)
+void Session::AsyncWriteMessage(const std::string &message)
 {
     bool write_in_progress;
     {
-        std::lock_guard<std::mutex> lock(m_mtx);
+        std::lock_guard<std::mutex> lock(m_sendQueMtx);
         write_in_progress = !m_sendQueue.empty();
-        m_sendQueue.push(message.Serialize());
+        m_sendQueue.push(message);
     }
     if (!write_in_progress)
         AsyncWriteNextMessage();
@@ -67,7 +47,7 @@ void Session::AsyncWriteMessage(ProtocolMessage &message)
 
 void Session::AsyncWriteNextMessage()
 {
-    std::lock_guard<std::mutex> lock(m_mtx);
+    std::lock_guard<std::mutex> lock(m_sendQueMtx);
     if (m_sendQueue.empty())
         return;
 
@@ -81,21 +61,21 @@ void Session::AsyncWriteNextMessage()
             self->CloseSession();
             return;
         }
-        std::lock_guard<std::mutex> lock(self->m_mtx);
+        std::lock_guard<std::mutex> lock(self->m_sendQueMtx);
         self->m_sendQueue.pop();
         if (!self->m_sendQueue.empty()){
             self->AsyncWriteNextMessage();
         }
         else{
-            self->m_cv.notify_one();
+            self->m_sendQueCV.notify_one();
         } });
 }
 
 void Session::CloseSession()
 {
-    std::unique_lock<std::mutex> lock(m_mtx);
-    m_cv.wait(lock, [this]()
-              { return m_sendQueue.empty(); });
+    std::unique_lock<std::mutex> lock(m_sendQueMtx);
+    m_sendQueCV.wait(lock, [this]()
+                     { return m_sendQueue.empty(); });
     if (m_socket.is_open())
     {
         m_socket.cancel();
@@ -103,12 +83,17 @@ void Session::CloseSession()
     }
 }
 
-uint32_t Session::getSessionId()
+void Session::SetMessageCallback(const MessageCallback &onMessage)
+{
+    m_onMessage = onMessage;
+}
+
+uint32_t Session::GetSessionId()
 {
     return m_sessionId;
 }
 
-Session::~Session()
+std::string &Session::GetReadBuf()
 {
-    CloseSession();
+    return m_readBuf;
 }

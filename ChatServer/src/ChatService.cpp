@@ -2,7 +2,6 @@
 
 ChatService::ChatService()
 {
-    m_exeServiceCb = std::bind(&ChatService::HandleChatService, this, std::placeholders::_1);
 }
 
 ChatService &ChatService::GetInstance()
@@ -11,22 +10,14 @@ ChatService &ChatService::GetInstance()
     return service;
 }
 
-ProtocolMessage ChatService::ExecuteService(Session::ptr session, const ProtocolMessage &request) const
+ProtocolMessage::Ptr ChatService::ExecuteService(const std::shared_ptr<Session> &session, const ProtocolMessage::Ptr &ProtocolMsg)
 {
-    return m_exeServiceCb(session, request);
-}
-
-ProtocolMessage ChatService::HandleChatService(Session::ptr session, const ProtocolMessage &request) const
-{
-    MessageType type = request.m_header.m_msgType;
-    auto handlerIt = m_serviceHandlerMap.find(type);
-    if (handlerIt != m_serviceHandlerMap.end())
+    MethodType type = ProtocolMsg->m_header.m_methodType;
+    if (m_serviceHandlerMap.find(type) != m_serviceHandlerMap.end())
     {
-        return handlerIt->second(session, request);
+        LOG_WARN("Handler for this MethodType not found!");
+        // todo router to method no found service
+        return nullptr;
     }
-    ProtocolMessage response;
-    response.m_header = request.m_header;
-    response.m_header.m_status = Status::NOT_FOUND;
-    response.p_body = MessageBodyFactory::Instance().Create(response.m_header.m_bodyType);
-    return response;
+    return m_serviceHandlerMap[type](session, ProtocolMsg);
 }

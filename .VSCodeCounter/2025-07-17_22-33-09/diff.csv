@@ -1,0 +1,20 @@
+"filename", "language", "C++", "CMake", "comment", "blank", "total"
+"c:\Users\linC\app\programming\C++ Project\HyperChat\ChatClient\CmakeLists.txt", "CMake", 0, -7, 0, -4, -11
+"c:\Users\linC\app\programming\C++ Project\HyperChat\ChatClient\RunClient.cpp", "C++", -10, 0, 0, -1, -11
+"c:\Users\linC\app\programming\C++ Project\HyperChat\ChatClient\include\ChatClient.h", "C++", -39, 0, 0, -4, -43
+"c:\Users\linC\app\programming\C++ Project\HyperChat\ChatClient\src\ChatClient.cpp", "C++", -135, 0, 0, -7, -142
+"c:\Users\linC\app\programming\C++ Project\HyperChat\Common\CMakeLists.txt", "CMake", 0, 11, 0, 1, 12
+"c:\Users\linC\app\programming\C++ Project\HyperChat\Common\include\Logger.h", "C++", 147, 0, 0, 22, 169
+"c:\Users\linC\app\programming\C++ Project\HyperChat\Common\include\Protocol.h", "C++", 50, 0, 1, 13, 64
+"c:\Users\linC\app\programming\C++ Project\HyperChat\Common\include\Semaphore.h", "C++", 35, 0, 0, 10, 45
+"c:\Users\linC\app\programming\C++ Project\HyperChat\Common\include\SpinLock.h", "C++", 14, 0, 0, 5, 19
+"c:\Users\linC\app\programming\C++ Project\HyperChat\Common\include\ThreadPool.h", "C++", 41, 0, 0, 8, 49
+"c:\Users\linC\app\programming\C++ Project\HyperChat\Common\include\Timestamp.h", "C++", 13, 0, 0, 4, 17
+"c:\Users\linC\app\programming\C++ Project\HyperChat\Common\include\UncopybleAndUnmovable.h", "C++", 10, 0, 0, 1, 11
+"c:\Users\linC\app\programming\C++ Project\HyperChat\Common\src\Logger.cpp", "C++", 198, 0, 0, 28, 226
+"c:\Users\linC\app\programming\C++ Project\HyperChat\Common\src\Protocol.cpp", "C++", 106, 0, 0, 18, 124
+"c:\Users\linC\app\programming\C++ Project\HyperChat\Common\src\Semaphore.cpp", "C++", 85, 0, 0, 7, 92
+"c:\Users\linC\app\programming\C++ Project\HyperChat\Common\src\Spinlock.cpp", "C++", 11, 0, 1, 3, 15
+"c:\Users\linC\app\programming\C++ Project\HyperChat\Common\src\ThreadPool.cpp", "C++", 45, 0, 0, 6, 51
+"c:\Users\linC\app\programming\C++ Project\HyperChat\Common\src\Timestamp.cpp", "C++", 32, 0, 0, 7, 39
+"Total", "-", 603, 4, 2, 117, 726

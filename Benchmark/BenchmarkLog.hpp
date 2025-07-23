@@ -31,7 +31,7 @@ static void BM_LogBenchmark(benchmark::State &state)
     {
         for (int i = 0; i < EPOCH; ++i)
         {
-            LOG_INFO("log info %d %s", i, msg.c_str());
+            LOG_INFO("log info %d %s", i, msg.data());
         }
     }
     state.SetItemsProcessed(static_cast<int64_t>(state.iterations()) * EPOCH);
