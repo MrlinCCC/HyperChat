@@ -43,8 +43,12 @@ TEST(TestAsyncTcpServer, ReceivesAndRespondsCorrectly)
 {
     constexpr unsigned short testPort = 15001;
     AsyncTcpServer server(testPort);
-    server.SetHandleProtocolMessage([&](const Session::Ptr &session, const ProtocolMessage::Ptr &msg)
-                                    { server.AsyncWriteMessage(session, msg); });
+    server.SetHandleProtocolMessage([&](const Session::Ptr &session, const ProtocolRequestMessage::Ptr &msg)
+                                    { 
+                                        ProtocolResponseMessage::Ptr responseMsg=std::make_shared<ProtocolResponseMessage>();
+                                        responseMsg->m_header.m_status = SUCCESS;
+                                        responseMsg->m_payload = msg->m_payload;
+                                        server.AsyncWriteMessage(session, responseMsg); });
     std::thread serverThread([&]()
                              { server.Run(); });
 
@@ -58,22 +62,21 @@ TEST(TestAsyncTcpServer, ReceivesAndRespondsCorrectly)
     auto p_session = std::make_shared<Session>(std::move(socket));
     p_session->SetMessageCallback([&](std::shared_ptr<Session> session, size_t length)
                                   {
-            auto messages=protocolCodec.UnpackProtocolMessage(session->GetReadBuf());
+            auto messages=protocolCodec.UnpackProtocolMessage<ProtocolResponseMessage>(session->GetReadBuf());
             for(auto message:messages){
-                EXPECT_EQ(message->m_header.m_methodType, LOGIN);
-                EXPECT_EQ(message->m_header.m_sessionId, 1);
+                EXPECT_EQ(message->m_header.m_status, SUCCESS);
                 EXPECT_EQ(message->m_payload, "123abc");
                 acceptMsgCount+=1;
             } });
 
     p_session->AsyncReadMessage();
-    auto msg = std::make_shared<ProtocolMessage>();
+    auto msg = std::make_shared<ProtocolRequestMessage>();
     msg->m_header.m_methodType = LOGIN;
     msg->m_header.m_sessionId = 1;
     msg->m_payload = "123abc";
     for (int i = 0; i < 10; ++i)
     {
-        p_session->AsyncWriteMessage(protocolCodec.PackProtocolMessage(msg));
+        p_session->AsyncWriteMessage(protocolCodec.PackProtocolMessage<ProtocolRequestMessage>(msg));
     }
     std::thread clientThread([&]()
                              { io_context.run(); });

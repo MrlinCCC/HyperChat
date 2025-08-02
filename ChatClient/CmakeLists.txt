@@ -1,11 +1,87 @@
-add_library(HyperChatClientLib STATIC
-    src/ChatClient.cpp
+cmake_minimum_required(VERSION 3.5)
+
+project(ChatClient VERSION 0.1 LANGUAGES CXX)
+
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools)
+
+set(TS_FILES ChatClient_zh_CN.ts)
+set(RESOURCE_FILES resources.qrc)
+set(CLIENT_SOURCE
+    ChatServiceStub.h ChatServiceStub.cpp
+    ChatClient.h ChatClient.cpp
+    ProtocolResponseHandler.h ProtocolResponseHandler.cpp)
+
+set(PROJECT_SOURCES
+        main.cpp
+        mainwindow.cpp
+        mainwindow.h
+        mainwindow.ui
+        ${CLIENT_SOURCE}
+        ${TS_FILES}
+        ${RESOURCE_FILES}
 )
 
-target_include_directories(HyperChatClientLib PUBLIC include)
+if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
+    qt_add_executable(ChatClient
+        MANUAL_FINALIZATION
+        ${PROJECT_SOURCES}
+    )
+# Define target properties for Android with Qt 6 as:
+#    set_property(TARGET ChatClient APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
+#                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
+# For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
 
-target_link_libraries(HyperChatClientLib PUBLIC asio::asio fmt::fmt jsoncpp_lib Common)
+    qt_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
+else()
+    if(ANDROID)
+        add_library(ChatClient SHARED
+            ${PROJECT_SOURCES}
+        )
+# Define properties for Android with Qt 5 after find_package() calls as:
+#    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
+    else()
+        add_executable(ChatClient
+            ${PROJECT_SOURCES}
+        )
+    endif()
 
-add_executable(HyperChatClient RunClient.cpp)
+    qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
+endif()
 
-target_link_libraries(HyperChatClient PRIVATE HyperChatClientLib)
+target_link_libraries(ChatClient PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(ChatClient PUBLIC Common)
+
+set_target_properties(ChatClient PROPERTIES
+    MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
+    MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
+    MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+    MACOSX_BUNDLE TRUE
+    WIN32_EXECUTABLE TRUE
+)
+
+install(TARGETS ChatClient
+    BUNDLE DESTINATION .
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+if(QT_VERSION_MAJOR EQUAL 6)
+    qt_finalize_executable(ChatClient)
+    set(DEPLOY_FLAG "${CMAKE_BINARY_DIR}/ChatClient/${CMAKE_BUILD_TYPE}/deployed.flag")
+    if(WIN32 AND TARGET ChatClient AND NOT EXISTS "${DEPLOY_FLAG}")
+        add_custom_command(
+            TARGET ChatClient POST_BUILD
+            COMMAND "${DWINDEPLOYQT_EXECUTABLE}" "${CMAKE_BINARY_DIR}/ChatClient/${CMAKE_BUILD_TYPE}/ChatClient.exe"
+            COMMAND ${CMAKE_COMMAND} -E touch "${CMAKE_BINARY_DIR}/deployed.flag"
+            COMMENT "Deploying Qt dependencies with windeployqt only on first build..."
+        )
+    endif()
+endif()

@@ -6,7 +6,8 @@ add_library(Common STATIC
     src/Timestamp.cpp
     src/Spinlock.cpp
     src/Protocol.cpp
+    src/Session.cpp
 )
 
-target_include_directories(Common PUBLIC include)
-target_link_libraries(Common PUBLIC fmt::fmt jsoncpp_lib)
+target_include_directories(Common PUBLIC include include/entity include/utils)
+target_link_libraries(Common PUBLIC fmt::fmt)

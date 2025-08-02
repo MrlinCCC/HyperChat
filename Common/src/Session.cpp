@@ -71,6 +71,18 @@ void Session::AsyncWriteNextMessage()
         } });
 }
 
+bool Session::Connect(asio::ip::tcp::resolver::results_type endpoint)
+{
+    asio::error_code ec;
+    asio::connect(m_socket, endpoint, ec);
+    if (ec)
+    {
+        LOG_ERROR("Connect server fail: {}", ec.message());
+        return false;
+    }
+    return true;
+}
+
 void Session::CloseSession()
 {
     std::unique_lock<std::mutex> lock(m_sendQueMtx);

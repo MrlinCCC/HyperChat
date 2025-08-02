@@ -1,7 +1,6 @@
 
 #pragma once
 #include <iostream>
-#include <entity/User.h>
 #include "Logger.h"
 #include <queue>
 #include <asio.hpp>
@@ -17,6 +16,7 @@ public:
     Session(asio::ip::tcp::socket &&socket);
     void AsyncReadMessage();
     void AsyncWriteMessage(const std::string &message);
+    bool Connect(asio::ip::tcp::resolver::results_type endpoint);
     void SetMessageCallback(const MessageCallback &);
     void CloseSession();
     uint32_t GetSessionId();

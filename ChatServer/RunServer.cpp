@@ -2,24 +2,34 @@
 #include <ChatServer.h>
 #include "Logger.h"
 #include <filesystem>
+#include <SQLiteCpp/SQLiteCpp.h>
 
-void initLogger()
+void InitLogger()
 {
-    std::filesystem::path logFile = std::filesystem::path(PROJECT_LOG_ROOT) / "TestLog_FileLogTest.log";
+    std::filesystem::path logFile = std::filesystem::path(PROJECT_LOG_ROOT) / "ChatServerLog.log";
     SET_LOGFILE(logFile.string());
     SET_LOGLEVEL(DEBUG);
 }
 
 int main(int argc, char *argv[])
 {
-    initLogger();
+    InitLogger();
     if (argc < 2)
     {
         LOG_ERROR("Usage: chatServer <port> [<threadNum>]");
         return -1;
     }
-    unsigned short port = std::atoi(argv[1]);
+    unsigned short port;
     size_t threadNum = 4;
+    try
+    {
+        port = std::atoi(argv[1]);
+    }
+    catch (const std::exception &e)
+    {
+        LOG_ERROR("Invalid port");
+        return -1;
+    }
 
     if (argc >= 3)
     {

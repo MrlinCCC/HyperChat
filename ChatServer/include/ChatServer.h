@@ -22,7 +22,7 @@ public:
     void Shutdown();
 
 private:
-    void HandleProtocolMessage(const std::shared_ptr<Session> &session, const ProtocolMessage::Ptr &ProtocolMsg);
+    void HandleProtocolMessage(const std::shared_ptr<Session> &session, const ProtocolRequestMessage::Ptr &ProtocolMsg);
 
     AsyncTcpServer m_tcpServer;
     ThreadPool m_servicePool;

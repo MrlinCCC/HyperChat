@@ -18,6 +18,7 @@ ChatServer::~ChatServer()
 
 void ChatServer::Run()
 {
+    m_isRunning = true;
     m_tcpServer.Run();
 }
 
@@ -31,16 +32,15 @@ void ChatServer::Shutdown()
     }
 }
 
-void ChatServer::HandleProtocolMessage(const std::shared_ptr<Session> &session, const ProtocolMessage::Ptr &ProtocolMsg)
+void ChatServer::HandleProtocolMessage(const std::shared_ptr<Session> &session, const ProtocolRequestMessage::Ptr &ProtocolMsg)
 {
-    // todo protocol message to request
     auto requestSession = session->shared_from_this();
     if (m_isRunning)
     {
         m_servicePool.SubmitTask(
-            [this](std::shared_ptr<Session> session, ProtocolMessage::Ptr message)
+            [this](std::shared_ptr<Session> session, ProtocolRequestMessage::Ptr message)
             {
-                ProtocolMessage::Ptr responseMsg = ChatService::GetInstance().ExecuteService(session, message);
+                ProtocolResponseMessage::Ptr responseMsg = ChatService::GetInstance().ExecuteService(session, message);
                 m_tcpServer.AsyncWriteMessage(session, responseMsg);
             },
             requestSession, ProtocolMsg);

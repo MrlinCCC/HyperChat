@@ -5,7 +5,7 @@ AsyncTcpServer::AsyncTcpServer(unsigned short port, size_t rwThreadNum)
       m_workGuard(asio::make_work_guard(m_connContext)),
       m_acceptor(m_connContext, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port)),
       m_rwContextPool(rwThreadNum),
-      m_isRunning(true)
+      m_isRunning(false)
 {
     m_sessions.reserve(SESSION_BUCKET_SIZE);
 }
@@ -21,6 +21,7 @@ void AsyncTcpServer::Run()
     AsyncAcceptConnection();
     auto endpoint = m_acceptor.local_endpoint();
     LOG_INFO("TcpServer is running! Listening on {}:{}!", endpoint.address().to_string(), endpoint.port());
+    m_isRunning = true;
     m_rwContextPool.Run();
     m_connContext.run();
     m_allAsyncFinish.Release();
@@ -78,33 +79,33 @@ void AsyncTcpServer::AsyncAcceptConnection()
 void AsyncTcpServer::OnMessage(const Session::Ptr &session, std::size_t length)
 {
     auto &buffer = session->GetReadBuf();
-    auto protocolMsgs = m_protocolCodec.UnpackProtocolMessage(buffer);
-    if (!m_handleProtocolMessage)
+    auto protocolRequests = m_protocolCodec.UnpackProtocolMessage<ProtocolRequestMessage>(buffer);
+    if (!m_handleProtocolRequest)
     {
         LOG_WARN("HandleProtocolRequest is nullptr!");
         return;
     }
-    for (const auto &protocolMsg : protocolMsgs)
+    for (const auto &protocolRequest : protocolRequests)
     {
-        m_handleProtocolMessage(session, protocolMsg);
+        m_handleProtocolRequest(session, protocolRequest);
     }
 }
 
-void AsyncTcpServer::AsyncWriteMessage(const Session::Ptr &session, const ProtocolMessage::Ptr &message)
+void AsyncTcpServer::AsyncWriteMessage(const Session::Ptr &session, const ProtocolResponseMessage::Ptr &message)
 {
     if (!session || !message)
     {
         LOG_ERROR("AsyncWrite error : session or message is nullptr!");
         return;
     }
-    session->AsyncWriteMessage(m_protocolCodec.PackProtocolMessage(message));
+    session->AsyncWriteMessage(m_protocolCodec.PackProtocolMessage<ProtocolResponseMessage>(message));
 }
 
 void AsyncTcpServer::SetHandleProtocolMessage(HandleProtocolMessage handleRequest)
 {
     if (handleRequest)
     {
-        m_handleProtocolMessage = handleRequest;
+        m_handleProtocolRequest = handleRequest;
     }
 }
 

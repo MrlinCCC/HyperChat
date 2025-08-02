@@ -12,14 +12,14 @@
 class AsyncTcpServer : public UncopybleAndUnmovable
 {
 public:
-    using HandleProtocolMessage = std::function<void(const Session::Ptr &, const ProtocolMessage::Ptr &)>;
+    using HandleProtocolMessage = std::function<void(const Session::Ptr &, const ProtocolRequestMessage::Ptr &)>;
 
     AsyncTcpServer(unsigned short port, size_t rwThreadNum = RW_THREAD_NUM);
     ~AsyncTcpServer();
     void Run();
     void Shutdown();
     void SetHandleProtocolMessage(HandleProtocolMessage handleRequest);
-    void AsyncWriteMessage(const Session::Ptr &session, const ProtocolMessage::Ptr &message);
+    void AsyncWriteMessage(const Session::Ptr &session, const ProtocolResponseMessage::Ptr &message);
     size_t GetSessionCount();
 
 private:
@@ -36,5 +36,5 @@ private:
     BinarySemaphore m_allAsyncFinish;
 
     ProtocolCodec m_protocolCodec;
-    HandleProtocolMessage m_handleProtocolMessage;
+    HandleProtocolMessage m_handleProtocolRequest;
 };

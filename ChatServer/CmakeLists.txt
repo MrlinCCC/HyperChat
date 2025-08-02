@@ -1,14 +1,13 @@
 add_library(HyperChatServerLib STATIC
     src/ChatServer.cpp 
-    src/Session.cpp 
     src/ChatService.cpp
     src/IoContextPool.cpp
     src/AsyncTcpServer.cpp
 )
-
+find_package(SQLiteCpp REQUIRED)
 target_include_directories(HyperChatServerLib PUBLIC include)
 
-target_link_libraries(HyperChatServerLib PUBLIC asio::asio fmt::fmt jsoncpp_lib Common)
+target_link_libraries(HyperChatServerLib PUBLIC asio::asio fmt::fmt Common SQLiteCpp)
 
 add_executable(HyperChatServer RunServer.cpp)
 target_link_libraries(HyperChatServer PRIVATE HyperChatServerLib)
