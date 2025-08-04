@@ -7,27 +7,26 @@
 
 #define BUFFER_SIZE 1024
 
-class Session : public std::enable_shared_from_this<Session>, public UncopybleAndUnmovable
+class Connection : public std::enable_shared_from_this<Connection>, public UncopybleAndUnmovable
 {
 public:
-    using Ptr = std::shared_ptr<Session>;
-    using MessageCallback = std::function<void(Session::Ptr, std::size_t)>;
+    using Ptr = std::shared_ptr<Connection>;
+    using MessageCallback = std::function<void(Connection::Ptr, std::size_t)>;
 
-    Session(asio::ip::tcp::socket &&socket);
+    Connection(asio::ip::tcp::socket &&socket);
     void AsyncReadMessage();
     void AsyncWriteMessage(const std::string &message);
     bool Connect(asio::ip::tcp::resolver::results_type endpoint);
     void SetMessageCallback(const MessageCallback &);
-    void CloseSession();
-    uint32_t GetSessionId();
+    void CloseConnection();
+    uint32_t GetConnId() const;
     std::string &GetReadBuf();
-
-    ~Session();
+    ~Connection();
 
 private:
     void AsyncWriteNextMessage();
 
-    uint32_t m_sessionId;
+    uint32_t m_connId;
     asio::ip::tcp::socket m_socket;
     std::string m_readBuf;
     std::queue<std::string> m_sendQueue;

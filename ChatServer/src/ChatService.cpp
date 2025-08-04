@@ -11,9 +11,9 @@ ChatService &ChatService::GetInstance()
     return service;
 }
 
-ProtocolResponseMessage::Ptr ChatService::ExecuteService(const std::shared_ptr<Session> &session, const ProtocolRequestMessage::Ptr &ProtocolRequest)
+ProtocolResponse::Ptr ChatService::ExecuteService(const std::shared_ptr<Connection> &connection, const ProtocolRequest::Ptr &ProtocolRequest)
 {
-    MethodType type = ProtocolRequest->m_header.m_methodType;
+    std::string type = ProtocolRequest->m_method;
 
     if (m_serviceHandlerMap.find(type) != m_serviceHandlerMap.end())
     {
@@ -21,7 +21,7 @@ ProtocolResponseMessage::Ptr ChatService::ExecuteService(const std::shared_ptr<S
         // todo router to method no found service
         return nullptr;
     }
-    return m_serviceHandlerMap[type](session, ProtocolRequest);
+    return m_serviceHandlerMap[type](connection, ProtocolRequest);
 }
 
 void ChatService::InitDatabase()

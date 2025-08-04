@@ -32,17 +32,17 @@ void ChatServer::Shutdown()
     }
 }
 
-void ChatServer::HandleProtocolMessage(const std::shared_ptr<Session> &session, const ProtocolRequestMessage::Ptr &ProtocolMsg)
+void ChatServer::HandleProtocolMessage(const std::shared_ptr<Connection> &connection, const ProtocolRequest::Ptr &ProtocolMsg)
 {
-    auto requestSession = session->shared_from_this();
+    auto conn = connection->shared_from_this();
     if (m_isRunning)
     {
         m_servicePool.SubmitTask(
-            [this](std::shared_ptr<Session> session, ProtocolRequestMessage::Ptr message)
+            [this](std::shared_ptr<Connection> connection, ProtocolRequest::Ptr message)
             {
-                ProtocolResponseMessage::Ptr responseMsg = ChatService::GetInstance().ExecuteService(session, message);
-                m_tcpServer.AsyncWriteMessage(session, responseMsg);
+                ProtocolResponse::Ptr responseMsg = ChatService::GetInstance().ExecuteService(connection, message);
+                m_tcpServer.AsyncWriteMessage(connection, responseMsg);
             },
-            requestSession, ProtocolMsg);
+            conn, ProtocolMsg);
     }
 }

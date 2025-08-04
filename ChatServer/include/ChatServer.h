@@ -4,7 +4,7 @@
 #include <string>
 #include <asio.hpp>
 #include <ThreadPool.h>
-#include "Session.h"
+#include "Connection.h"
 #include "atomic"
 #include "Logger.h"
 #include "AsyncTcpServer.h"
@@ -22,7 +22,7 @@ public:
     void Shutdown();
 
 private:
-    void HandleProtocolMessage(const std::shared_ptr<Session> &session, const ProtocolRequestMessage::Ptr &ProtocolMsg);
+    void HandleProtocolMessage(const std::shared_ptr<Connection> &connection, const ProtocolRequest::Ptr &ProtocolMsg);
 
     AsyncTcpServer m_tcpServer;
     ThreadPool m_servicePool;

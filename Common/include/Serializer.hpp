@@ -112,11 +112,6 @@ private:
         return std::string(reinterpret_cast<const char *>(&data), sizeof(T));
     }
 
-    // static std::string SerializeImp(const std::string &str)
-    // {
-    //     return str;
-    // }
-
     template <typename Container>
     static std::enable_if_t<IsContainerV<Container>, std::string>
     SerializeImp(const Container &container)
@@ -172,14 +167,6 @@ private:
             throw std::runtime_error("String value is too small to hold the data.");
         }
     }
-
-    // static size_t DeSerializeImp(std::string &str, const std::string &value)
-    // {
-    //     size_t size = value.size();
-    //     str.resize(size);
-    //     std::memcpy(&str[0], value.data(), size);
-    //     return size;
-    // }
 
     template <typename Container>
     static std::enable_if_t<IsContainerV<Container>, size_t>

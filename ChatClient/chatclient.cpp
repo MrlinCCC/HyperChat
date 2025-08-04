@@ -46,10 +46,10 @@ void ChatClient::ConnectServer()
     m_ioContext.run();
 }
 
-void ChatClient::OnResponse(Session::Ptr session, std::size_t length)
+void ChatClient::OnResponse(Connection::Ptr session, std::size_t length)
 {
     auto &buffer = session->GetReadBuf();
-    auto protocolResponses = m_protocolCodec.UnpackProtocolMessage<ProtocolResponseMessage>(buffer);
+    auto protocolResponses = m_protocolCodec.UnPackProtocolResponse(buffer);
     for (const auto &protocolResponse : protocolResponses)
     {
         // HandleProtocolResponse
@@ -60,6 +60,6 @@ void ChatClient::CloseConnection()
 {
     if (m_isConnected)
     {
-        m_session.CloseSession();
+        m_session.CloseConnection();
     }
 }

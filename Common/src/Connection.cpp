@@ -1,18 +1,18 @@
-#include "Session.h"
+#include "Connection.h"
 #include "utils/IdGenerator.hpp"
 
-Session::Session(asio::ip::tcp::socket &&socket) : m_socket(std::move(socket))
+Connection::Connection(asio::ip::tcp::socket &&socket) : m_socket(std::move(socket))
 {
     m_readBuf.resize(BUFFER_SIZE);
-    m_sessionId = generateAutoIncrementId<Session>();
+    m_connId = generateAutoIncrementId<Connection>();
 }
 
-Session::~Session()
+Connection::~Connection()
 {
-    CloseSession();
+    CloseConnection();
 }
 
-void Session::AsyncReadMessage()
+void Connection::AsyncReadMessage()
 {
     auto self = shared_from_this();
     m_socket.async_read_some(asio::buffer(m_readBuf), [self](std::error_code ec, std::size_t length)
@@ -23,7 +23,7 @@ void Session::AsyncReadMessage()
                          if (ec)
                          {
                              LOG_ERROR(ec.message());
-                             self->CloseSession();
+                             self->CloseConnection();
                              return;
                          }
                          if(!self->m_onMessage){
@@ -33,7 +33,7 @@ void Session::AsyncReadMessage()
                          self->AsyncReadMessage(); });
 }
 
-void Session::AsyncWriteMessage(const std::string &message)
+void Connection::AsyncWriteMessage(const std::string &message)
 {
     bool write_in_progress;
     {
@@ -45,7 +45,7 @@ void Session::AsyncWriteMessage(const std::string &message)
         AsyncWriteNextMessage();
 }
 
-void Session::AsyncWriteNextMessage()
+void Connection::AsyncWriteNextMessage()
 {
     std::lock_guard<std::mutex> lock(m_sendQueMtx);
     if (m_sendQueue.empty())
@@ -58,7 +58,7 @@ void Session::AsyncWriteNextMessage()
          if (ec)
         {
             LOG_ERROR(ec.message());
-            self->CloseSession();
+            self->CloseConnection();
             return;
         }
         std::lock_guard<std::mutex> lock(self->m_sendQueMtx);
@@ -71,7 +71,7 @@ void Session::AsyncWriteNextMessage()
         } });
 }
 
-bool Session::Connect(asio::ip::tcp::resolver::results_type endpoint)
+bool Connection::Connect(asio::ip::tcp::resolver::results_type endpoint)
 {
     asio::error_code ec;
     asio::connect(m_socket, endpoint, ec);
@@ -83,7 +83,7 @@ bool Session::Connect(asio::ip::tcp::resolver::results_type endpoint)
     return true;
 }
 
-void Session::CloseSession()
+void Connection::CloseConnection()
 {
     std::unique_lock<std::mutex> lock(m_sendQueMtx);
     m_sendQueCV.wait(lock, [this]()
@@ -95,17 +95,17 @@ void Session::CloseSession()
     }
 }
 
-void Session::SetMessageCallback(const MessageCallback &onMessage)
+void Connection::SetMessageCallback(const MessageCallback &onMessage)
 {
     m_onMessage = onMessage;
 }
 
-uint32_t Session::GetSessionId()
-{
-    return m_sessionId;
-}
-
-std::string &Session::GetReadBuf()
+std::string &Connection::GetReadBuf()
 {
     return m_readBuf;
+}
+
+uint32_t Connection::GetConnId() const
+{
+    return m_connId;
 }

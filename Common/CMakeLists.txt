@@ -6,7 +6,7 @@ add_library(Common STATIC
     src/Timestamp.cpp
     src/Spinlock.cpp
     src/Protocol.cpp
-    src/Session.cpp
+    src/Connection.cpp
 )
 
 target_include_directories(Common PUBLIC include include/entity include/utils)

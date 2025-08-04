@@ -7,7 +7,7 @@ AsyncTcpServer::AsyncTcpServer(unsigned short port, size_t rwThreadNum)
       m_rwContextPool(rwThreadNum),
       m_isRunning(false)
 {
-    m_sessions.reserve(SESSION_BUCKET_SIZE);
+    m_connections.reserve(CONNECTION_BUCKET_SIZE);
 }
 
 AsyncTcpServer::~AsyncTcpServer()
@@ -38,10 +38,10 @@ void AsyncTcpServer::Shutdown()
             m_acceptor.close();
         }
         m_rwContextPool.Shutdown();
-        std::lock_guard<std::mutex> lock(m_sessionsMtx);
-        for (auto &[id, session] : m_sessions)
+        std::lock_guard<std::mutex> lock(m_connsMtx);
+        for (auto &[id, connection] : m_connections)
         {
-            session->CloseSession();
+            connection->CloseConnection();
         }
         m_workGuard.reset();
         m_allAsyncFinish.Acquire();
@@ -65,21 +65,21 @@ void AsyncTcpServer::AsyncAcceptConnection()
         asio::ip::tcp::socket newSocket(ioContext);
         newSocket.assign(socket->local_endpoint().protocol(), socket->release());
 
-        auto newSessionPtr = std::make_shared<Session>(std::move(newSocket));
+        auto newConnPtr = std::make_shared<Connection>(std::move(newSocket));
         auto onMessage = std::bind(&AsyncTcpServer::OnMessage,this,std::placeholders::_1,std::placeholders::_2);
-        newSessionPtr->SetMessageCallback(onMessage);
+        newConnPtr->SetMessageCallback(onMessage);
         {
-            std::lock_guard<std::mutex> lock(m_sessionsMtx);
-            m_sessions.insert(std::make_pair(newSessionPtr->GetSessionId(),newSessionPtr));
+            std::lock_guard<std::mutex> lock(m_connsMtx);
+            m_connections.insert(std::make_pair(newConnPtr->GetConnId(),newConnPtr));
         }
-        newSessionPtr->AsyncReadMessage();
+        newConnPtr->AsyncReadMessage();
         AsyncAcceptConnection(); });
 }
 
-void AsyncTcpServer::OnMessage(const Session::Ptr &session, std::size_t length)
+void AsyncTcpServer::OnMessage(const Connection::Ptr &connection, std::size_t length)
 {
-    auto &buffer = session->GetReadBuf();
-    auto protocolRequests = m_protocolCodec.UnpackProtocolMessage<ProtocolRequestMessage>(buffer);
+    auto &buffer = connection->GetReadBuf();
+    auto protocolRequests = m_protocolCodec.UnPackProtocolRequest(buffer);
     if (!m_handleProtocolRequest)
     {
         LOG_WARN("HandleProtocolRequest is nullptr!");
@@ -87,18 +87,18 @@ void AsyncTcpServer::OnMessage(const Session::Ptr &session, std::size_t length)
     }
     for (const auto &protocolRequest : protocolRequests)
     {
-        m_handleProtocolRequest(session, protocolRequest);
+        m_handleProtocolRequest(connection, protocolRequest);
     }
 }
 
-void AsyncTcpServer::AsyncWriteMessage(const Session::Ptr &session, const ProtocolResponseMessage::Ptr &message)
+void AsyncTcpServer::AsyncWriteMessage(const Connection::Ptr &connection, const ProtocolResponse::Ptr &message)
 {
-    if (!session || !message)
+    if (!connection || !message)
     {
-        LOG_ERROR("AsyncWrite error : session or message is nullptr!");
+        LOG_ERROR("AsyncWrite error : connection or message is nullptr!");
         return;
     }
-    session->AsyncWriteMessage(m_protocolCodec.PackProtocolMessage<ProtocolResponseMessage>(message));
+    connection->AsyncWriteMessage(m_protocolCodec.PackProtocolResponse(message));
 }
 
 void AsyncTcpServer::SetHandleProtocolMessage(HandleProtocolMessage handleRequest)
@@ -109,8 +109,8 @@ void AsyncTcpServer::SetHandleProtocolMessage(HandleProtocolMessage handleReques
     }
 }
 
-size_t AsyncTcpServer::GetSessionCount()
+size_t AsyncTcpServer::GetConnectionCount()
 {
-    std::lock_guard<std::mutex> lock(m_sessionsMtx);
-    return m_sessions.size();
+    std::lock_guard<std::mutex> lock(m_connsMtx);
+    return m_connections.size();
 }

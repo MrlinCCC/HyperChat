@@ -3,7 +3,7 @@
 #include "iostream"
 #include "Protocol.h"
 #include "asio.hpp"
-#include "Session.h"
+#include "Connection.h"
 #define MAX_RETRIES 10
 
 struct Host
@@ -27,12 +27,12 @@ public:
     void CloseConnection();
 
 private:
-    void OnResponse(Session::Ptr session, std::size_t length);
+    void OnResponse(Connection::Ptr session, std::size_t length);
 
     asio::io_context m_ioContext;
     asio::executor_work_guard<asio::io_context::executor_type> m_workGuard;
     Host m_serverHost;
-    Session m_session;
+    Connection m_session;
     bool m_isConnected;
 
     ProtocolCodec m_protocolCodec;
