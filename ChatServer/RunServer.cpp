@@ -2,7 +2,7 @@
 #include <ChatServer.h>
 #include "Logger.h"
 #include <filesystem>
-#include <SQLiteCpp/SQLiteCpp.h>
+#include "ChatService.h"
 
 void InitLogger()
 {
@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
     {
         port = std::atoi(argv[1]);
     }
-    catch (const std::exception &e)
+    catch (...)
     {
         LOG_ERROR("Invalid port");
         return -1;
@@ -41,6 +41,7 @@ int main(int argc, char *argv[])
         }
     }
     ChatServer server(port, threadNum);
+    ChatService::GetInstance();
     server.Run();
     return 0;
 }

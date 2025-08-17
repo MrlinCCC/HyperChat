@@ -112,6 +112,13 @@ private:
         return std::string(reinterpret_cast<const char *>(&data), sizeof(T));
     }
 
+    template <typename T>
+    static std::enable_if_t<std::is_enum_v<T>, std::string>
+    SerializeImp(const T &data)
+    {
+        return SerializeImp(static_cast<std::underlying_type_t<T>>(data));
+    }
+
     template <typename Container>
     static std::enable_if_t<IsContainerV<Container>, std::string>
     SerializeImp(const Container &container)
@@ -166,6 +173,16 @@ private:
         {
             throw std::runtime_error("String value is too small to hold the data.");
         }
+    }
+
+    template <typename T>
+    static std::enable_if_t<std::is_enum_v<T>, size_t>
+    DeSerializeImp(T &data, const std::string &value)
+    {
+        std::underlying_type_t<T> underlying;
+        size_t offset = DeSerializeImp(underlying, value);
+        data = static_cast<T>(underlying);
+        return offset;
     }
 
     template <typename Container>

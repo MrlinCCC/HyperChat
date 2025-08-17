@@ -49,7 +49,7 @@ void ChatClient::ConnectServer()
 void ChatClient::OnResponse(Connection::Ptr session, std::size_t length)
 {
     auto &buffer = session->GetReadBuf();
-    auto protocolResponses = m_protocolCodec.UnPackProtocolResponse(buffer);
+    auto protocolResponses = ProtocolCodec::Instance().UnPackProtocolResponse(buffer);
     for (const auto &protocolResponse : protocolResponses)
     {
         // HandleProtocolResponse

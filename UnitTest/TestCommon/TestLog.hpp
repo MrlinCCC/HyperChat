@@ -101,7 +101,7 @@ TEST(TestLog, FileLogTest)
     LOG_FLUSH();
 
     std::ifstream logFileStream(logFile);
-    ASSERT_TRUE(logFileStream.is_open());
+    EXPECT_TRUE(logFileStream.is_open());
 
     std::string line;
     std::getline(logFileStream, line);
@@ -159,26 +159,26 @@ TEST(TestLog, FormatLogTest)
     LOG_FLUSH();
 
     std::ifstream logFileStream(logFile);
-    ASSERT_TRUE(logFileStream.is_open());
+    EXPECT_TRUE(logFileStream.is_open());
 
     std::string line;
 
     std::getline(logFileStream, line);
-    ASSERT_NE(line.find("Simple integer: 42"), std::string::npos);
+    EXPECT_NE(line.find("Simple integer: 42"), std::string::npos);
     std::getline(logFileStream, line);
-    ASSERT_NE(line.find("Integer and string: 1 test"), std::string::npos);
+    EXPECT_NE(line.find("Integer and string: 1 test"), std::string::npos);
     std::getline(logFileStream, line);
-    ASSERT_NE(line.find("Floating point: 3.14"), std::string::npos);
+    EXPECT_NE(line.find("Floating point: 3.14"), std::string::npos);
     std::getline(logFileStream, line);
-    ASSERT_NE(line.find("Multiple integers: 10 20 30"), std::string::npos);
+    EXPECT_NE(line.find("Multiple integers: 10 20 30"), std::string::npos);
     std::getline(logFileStream, line);
-    ASSERT_NE(line.find("Character: A"), std::string::npos);
+    EXPECT_NE(line.find("Character: A"), std::string::npos);
     std::getline(logFileStream, line);
-    ASSERT_NE(line.find("String with spaces: 'hello world'"), std::string::npos);
+    EXPECT_NE(line.find("String with spaces: 'hello world'"), std::string::npos);
     std::getline(logFileStream, line);
-    ASSERT_NE(line.find("Mix: int=7, float=2.7, char=Z, str=mix"), std::string::npos);
+    EXPECT_NE(line.find("Mix: int=7, float=2.7, char=Z, str=mix"), std::string::npos);
     std::getline(logFileStream, line);
-    ASSERT_NE(line.find("Percent sign: %"), std::string::npos);
+    EXPECT_NE(line.find("Percent sign: %"), std::string::npos);
 
     EXPECT_THROW(LOG_INFO("Expect two ints: %d %d", 42), std::invalid_argument);
     EXPECT_THROW(LOG_INFO("Expect int but pass string: %d", "oops"), std::invalid_argument);

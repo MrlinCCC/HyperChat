@@ -41,10 +41,10 @@ TEST(TestIoContextPool, RoundGetIoContext)
     }
     for (int i = 0; i < context_count; ++i)
     {
-        ASSERT_EQ(ioContextRefs[i], ioContextRefs[i + context_count]);
+        EXPECT_EQ(ioContextRefs[i], ioContextRefs[i + context_count]);
     }
     std::set<asio::io_context *> ioContextRefsSet(ioContextRefs.begin(), ioContextRefs.end());
-    ASSERT_EQ(ioContextRefsSet.size(), context_count);
+    EXPECT_EQ(ioContextRefsSet.size(), context_count);
 }
 
 TEST(TestIoContextPool, ShutdownStopsAllContexts)

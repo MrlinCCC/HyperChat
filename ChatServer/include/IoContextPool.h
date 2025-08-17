@@ -6,12 +6,10 @@
 #include <Logger.h>
 #include "UncopybleAndUnmovable.h"
 
-#define Context_NUM 4
-
 class IoContextPool : public UncopybleAndUnmovable
 {
 public:
-    explicit IoContextPool(size_t contextNum = Context_NUM);
+    explicit IoContextPool(size_t contextNum);
     ~IoContextPool();
     void Run();
     void Shutdown();

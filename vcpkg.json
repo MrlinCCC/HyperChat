@@ -1,5 +1,5 @@
 {
   "name": "hyperchat",
   "version": "0.1.0",
-  "dependencies": ["asio","fmt","jsoncpp","gtest","benchmark","sqlitecpp"]
+  "dependencies": ["asio","fmt","jsoncpp","gtest","benchmark","sqlitecpp","openssl"]
 }

@@ -34,8 +34,6 @@ private:
     Host m_serverHost;
     Connection m_session;
     bool m_isConnected;
-
-    ProtocolCodec m_protocolCodec;
 };
 
 #endif // CHATCLIENT_H

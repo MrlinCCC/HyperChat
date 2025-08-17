@@ -1,11 +1,49 @@
 #include "Timestamp.h"
 #include <ctime>
 #include <cstdio>
+#include <iomanip>
+#include <sstream>
 
-Timestamp::Timestamp() : m_timestampMicroSeconds(0) {}
+Timestamp::Timestamp() : m_timestampMicroSeconds(Timestamp::Now().m_timestampMicroSeconds) {}
 
 Timestamp::Timestamp(int64_t microSecondsSinceEpoch)
     : m_timestampMicroSeconds(microSecondsSinceEpoch) {}
+
+Timestamp::Timestamp(const std::string &timeStr)
+{
+    std::tm tm = {};
+    std::istringstream ss(timeStr);
+
+    std::string timePart;
+    std::string microsecondsPart = "000000";
+
+    size_t pos = timeStr.find('.');
+    if (pos != std::string::npos)
+    {
+        timePart = timeStr.substr(0, pos);
+        microsecondsPart = timeStr.substr(pos + 1);
+    }
+    else
+    {
+        timePart = timeStr;
+    }
+
+    ss.str(timePart);
+    ss >> std::get_time(&tm, "%Y-%m-%d %H:%M:%S");
+    if (ss.fail())
+    {
+        throw std::invalid_argument("Failed to parse time string: " + timeStr);
+    }
+
+    std::time_t time = std::mktime(&tm);
+    if (time == -1)
+    {
+        throw std::invalid_argument("Failed to convert to time_t");
+    }
+
+    int microseconds = std::stoi(microsecondsPart.substr(0, 6));
+    m_timestampMicroSeconds = static_cast<int64_t>(time) * 1000000 + microseconds;
+}
 
 Timestamp Timestamp::Now()
 {
