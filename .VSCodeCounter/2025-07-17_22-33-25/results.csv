@@ -1,8 +1,0 @@
-"filename", "language", "C++", "CMake", "comment", "blank", "total"
-"c:\Users\linC\app\programming\C++ Project\HyperChat\UnitTest\CMakeLists.txt", "CMake", 0, 6, 0, 4, 10
-"c:\Users\linC\app\programming\C++ Project\HyperChat\UnitTest\RunTest.cpp", "C++", 13, 0, 0, 1, 14
-"c:\Users\linC\app\programming\C++ Project\HyperChat\UnitTest\TestCommon\TestLog.hpp", "C++", 169, 0, 0, 20, 189
-"c:\Users\linC\app\programming\C++ Project\HyperChat\UnitTest\TestCommon\TestThreadPool.hpp", "C++", 75, 0, 0, 10, 85
-"c:\Users\linC\app\programming\C++ Project\HyperChat\UnitTest\TestServer\TestChatServer.hpp", "C++", 79, 0, 0, 11, 90
-"c:\Users\linC\app\programming\C++ Project\HyperChat\UnitTest\TestServer\TestIoContextPool.hpp", "C++", 55, 0, 0, 12, 67
-"Total", "-", 391, 6, 0, 58, 455
