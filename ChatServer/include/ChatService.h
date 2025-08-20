@@ -57,7 +57,7 @@ private:
 
 	bool IsUserOnline(uint32_t userId);
 
-	const Connection::Ptr& GetUserConnection(uint32_t userId);
+	const Connection::Ptr& ChatService::GetUserConnection(uint32_t userId);
 
 	template<typename T>
 	void PushOnlineData(const Connection::Ptr& conn, const T& data, const std::string& pushType) {
@@ -77,17 +77,17 @@ private:
 
 	ChatRoomResponse CreateChatRoomHandler(const Connection::Ptr& conn, const CreateChatRoomRequest& request, Status& status);
 
-	StatusResponse InviteToChatRoomHandler(const Connection::Ptr& conn, const InviteToChatRoomRequest& request, Status& status);
+	ChatRoomInvitationResponse InviteToChatRoomHandler(const Connection::Ptr& conn, const InviteToChatRoomRequest& request, Status& status);
 
 	ChatRoomResponse AcceptChatRoomtInvitationHandler(const Connection::Ptr& conn, const HandleInvitationRequest& request, Status& status);
 
 	StatusResponse RejectChatRoomInvitationHandler(const Connection::Ptr& conn, const HandleInvitationRequest& request, Status& status);
 
-	StatusResponse OneChatHandler(const Connection::Ptr& conn, const OneChatRequest& request, Status& status);
+	MessageResponse OneChatHandler(const Connection::Ptr& conn, const OneChatRequest& request, Status& status);
 
-	StatusResponse GroupChatHandler(const Connection::Ptr& conn, const GroupChatRequest& request, Status& status);
+	MessageResponse GroupChatHandler(const Connection::Ptr& conn, const GroupChatRequest& request, Status& status);
 
-	StatusResponse AddFriendHandler(const Connection::Ptr& conn, const AddFriendRequest& request, Status& status);
+	FriendInvitationResponse AddFriendHandler(const Connection::Ptr& conn, const AddFriendRequest& request, Status& status);
 
 	UserResponse AcceptFriendHandler(const Connection::Ptr& conn, const HandleInvitationRequest& request, Status& status);
 
@@ -105,18 +105,19 @@ private:
 };
 
 
-constexpr const char* QueryUserById = "SELECT * FROM users WHERE username = ?";
+constexpr const char* QueryUserById = "SELECT * FROM users WHERE id = ?";
+constexpr const char* QueryUserByUsername = "SELECT * FROM users WHERE username = ?";
 constexpr const char* InsertUser = "INSERT INTO users (username, password) VALUES (?, ?)";
 constexpr const char* QueryFriendsByUserId = R"(
     SELECT u.id,u.username FROM friends f JOIN users u ON f.friend_id = u.id WHERE f.user_id = ? AND f.status = 1
 )";
 constexpr const char* QueryFriendsInvitationByFrdId = R"(
-    SELECT f.id AS id,u.id AS user_id,u.username As username FROM friends f JOIN users u ON f.friend_id = u.id WHERE f.friend_id = ? AND (f.status = 0 OR f.status = 2)
+    SELECT f.id AS id,u.id AS user_id,u.username As username FROM friends f JOIN users u ON f.friend_id = u.id WHERE f.friend_id = ? AND f.status = 0
 )";
-constexpr const char* QueryFriendsByUserIdAndFrdId = R"(
-    SELECT u.id,u.username FROM friends f JOIN users u ON f.friend_id = u.id WHERE f.user_id = ? And f.friend_id = ? AND f.status = 1
+constexpr const char* QueryFriendRelationsByUserIdAndFrdId = R"(
+    SELECT f.id, f.user_id, f.friend_id, f.status FROM friends f WHERE (f.user_id = ? AND f.friend_id = ?) OR (f.user_id = ? AND f.friend_id = ?)
 )";
-constexpr const char* QueryFriendRelationByIdAndUId = "SELECT f.id, f.user_id, f.friend_id, f.status FROM friends f WHERE f.id = ? AND f.friend_id = ? AND m.status=0";
+constexpr const char* QueryFriendRelationByIdAndUId = "SELECT f.id, f.user_id, f.friend_id, f.status FROM friends f WHERE f.id = ? AND f.friend_id = ? AND f.status=0";
 constexpr const char* InsertFriend = "INSERT INTO friends (user_id, friend_id, status) VALUES (?, ?, ?)";
 constexpr const char* UpdateFriendStatus = "UPDATE friends SET status = ? WHERE id = ?";
 constexpr const char* InsertMessage = "INSERT INTO messages (room_id, sender_id, message) VALUES (?, ?, ?)";
@@ -125,17 +126,20 @@ constexpr const char* QueryOfflineMsgsByUserId = R"(
 )";
 constexpr const char* InsertOfflineRecipient = "INSERT INTO offline_recipients (message_id, recipient_id) VALUES (?, ?)";
 constexpr const char* DeleteOfflineMsgsByUserId = "DELETE FROM offline_recipients WHERE recipient_id = ?";
-constexpr const char* QueryChatRoomByCrId = "SELECT cr.id,cr.name,cr.owner_id FROM chat_room cr WHERE cr.id=?";
+constexpr const char* QueryChatRoomByCrId = "SELECT cr.id,cr.name,cr.owner_id FROM chat_rooms cr WHERE cr.id=?";
 constexpr const char* InsertChatRoom = "INSERT INTO chat_rooms (name,owner_id) VALUES (?, ?)";
 constexpr const char* QueryChatRoomByUserId = R"(
     SELECT cr.id,cr.name,cr.owner_id FROM chat_room_members m JOIN chat_rooms cr ON m.room_id = cr.id WHERE m.user_id = ? AND m.status=1
 )";
-constexpr const char* QueryChatRoomMemberByCrId = "SELECT m.id, m_room_id, m.user_id, m_role FROM chat_room_members m WHERE m.room_id = ? AND m.status=1";
-constexpr const char* QueryChatRoomMemberByCrIdAndUId = "SELECT m.id, m_room_id, m.user_id, m_role FROM chat_room_members m WHERE m.room_id = ? AND m.user_id = ? AND m.status=1";
-constexpr const char* QueryChatRoomMemberByIdAndUId = "SELECT m.id, m_room_id, m.user_id, m_role FROM chat_room_members m WHERE m.id = ? AND m.user_id = ? AND m.status=0";
-constexpr const char* QueryChatRoomInvitationByUId = R"(
-	SELECT m.id AS member_id,cr.id AS room_id,cr.name AS room_name,cr.owner_id AS owner_id,u.id AS user_id,u.username AS username FROM chat_room_members m 
-	JOIN users u ON m.user_id = u.id JOIN chat_rooms cr ON m.room_id = cr.id WHERE m.user_id = ? AND m.status = 0
+constexpr const char* QueryChatRoomMemberByCrId = "SELECT m.id, m.room_id, m.user_id, m.role FROM chat_room_members m WHERE m.room_id = ? AND m.status=1";
+constexpr const char* QueryChatRoomMemberByCrIdAndUId = "SELECT m.id, m.room_id, m.user_id, m.role FROM chat_room_members m WHERE m.room_id = ? AND m.user_id = ? AND m.status=1";
+constexpr const char* QueryChatRoomInvitationByIdAndUId = R"(
+	SELECT m.id AS member_id,m.room_id AS room_id,m.inviter_id AS inviter_id,cr.name AS room_name,cr.owner_id AS owner_id, u.username AS username 
+	FROM chat_room_members m JOIN users u ON m.inviter_id = u.id JOIN chat_rooms cr ON m.room_id = cr.id WHERE m.id = ? AND m.user_id = ? AND m.status = 0
 )";
-constexpr const char* InsertChatRoomMember = "INSERT INTO chat_room_members (room_id,user_id,role,status) VALUES (?, ?, ?, ?)";
+constexpr const char* QueryChatRoomInvitationByUId = R"(
+	SELECT m.id AS member_id,m.room_id AS room_id,m.inviter_id AS inviter_id,cr.name AS room_name,cr.owner_id AS owner_id, u.username AS username 
+	FROM chat_room_members m JOIN users u ON m.inviter_id = u.id JOIN chat_rooms cr ON m.room_id = cr.id WHERE m.user_id = ? AND m.status = 0
+)";
+constexpr const char* InsertChatRoomMember = "INSERT INTO chat_room_members (room_id,user_id,role,status,inviter_id) VALUES (?, ?, ?, ?, ?)";
 constexpr const char* UpdateChatRoomMemberStatus = "UPDATE chat_room_members SET status = ? WHERE id = ?";

@@ -128,6 +128,10 @@ std::vector<char>& Connection::GetReadBuf()
 	return m_readBuf;
 }
 
+std::queue<std::string>& Connection::GetSendQueue() {
+	return m_sendQueue;
+}
+
 uint32_t Connection::GetConnId() const
 {
 	return m_connId;

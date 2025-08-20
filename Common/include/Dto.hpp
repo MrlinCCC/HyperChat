@@ -4,18 +4,27 @@
 #include "Utils.hpp"
 
 template<typename T>
-inline T ToUint(const std::string& str, T defaultValue = 0)
+inline T ToUint(const std::string& str, T defaultValue = static_cast<T>(0)) noexcept
 {
+	static_assert(std::is_integral<T>::value || std::is_enum<T>::value,
+		"ToUint only supports integral or enum types");
 	if (str.empty())
-	{
 		return defaultValue;
-	}
 
 	try
 	{
-		return static_cast<T>(std::stoul(str));
+		if constexpr (std::is_enum<T>::value)
+		{
+			using Underlying = typename std::underlying_type<T>::type;
+			Underlying value = static_cast<Underlying>(std::stoull(str));
+			return static_cast<T>(value);
+		}
+		else
+		{
+			return static_cast<T>(std::stoull(str));
+		}
 	}
-	catch (const std::exception&)
+	catch (...)
 	{
 		return defaultValue;
 	}
@@ -32,8 +41,7 @@ enum AddRelationStatus : uint8_t
 {
 	PENDING = 0,
 	ACCEPTED = 1,
-	REJECTED = 2,
-	BLOCKED = 3
+	REJECTED = 2
 };
 
 enum ChatRoomRole : uint8_t
@@ -214,11 +222,11 @@ struct ChatRoomInvitation {
 	static ChatRoomInvitation FromMap(const std::unordered_map<std::string, std::string>& row)
 	{
 		return ChatRoomInvitation{
-			ToUint<uint32_t>(GetOrDefault(row, "id")),
-			{ToUint<uint32_t>(GetOrDefault(row, "cr_id")),
-				GetOrDefault(row, "name"),
-				ToUint<uint32_t>(GetOrDefault(row, "m_ownerId"))},
-			{ToUint<uint32_t>(GetOrDefault(row, "user_id")),
+			ToUint<uint32_t>(GetOrDefault(row, "member_id")),
+			{ToUint<uint32_t>(GetOrDefault(row, "room_id")),
+				GetOrDefault(row, "room_name"),
+				ToUint<uint32_t>(GetOrDefault(row, "owner_id"))},
+			{ToUint<uint32_t>(GetOrDefault(row, "inviter_id")),
 				GetOrDefault(row, "username"),
 				"",
 				UserState::STATE_NULL}
@@ -228,26 +236,26 @@ struct ChatRoomInvitation {
 
 struct FriendInvitationDecision {
 	uint32_t m_invitationId;
-	User m_user;
+	User m_friend;
 	AddRelationStatus m_status;
 	FriendInvitationDecision() = default;
-	FriendInvitationDecision(uint32_t invitationId, User user, AddRelationStatus status)
-		: m_invitationId(invitationId), m_user(user), m_status(status) {
+	FriendInvitationDecision(uint32_t invitationId, User frd, AddRelationStatus status)
+		: m_invitationId(invitationId), m_friend(frd), m_status(status) {
 	}
-	auto Tie()& { return std::tie(m_invitationId, m_user, m_status); }
-	auto Tie() const& { return std::tie(m_invitationId, m_user, m_status); }
+	auto Tie()& { return std::tie(m_invitationId, m_friend, m_status); }
+	auto Tie() const& { return std::tie(m_invitationId, m_friend, m_status); }
 };
 
 struct ChatRoomInvitationDecision {
 	uint32_t m_invitationId;
-	User m_user;
+	ChatRoom m_chatRoom;
 	AddRelationStatus m_status;
 	ChatRoomInvitationDecision() = default;
-	ChatRoomInvitationDecision(uint32_t invitationId, User user, AddRelationStatus status)
-		: m_invitationId(invitationId), m_user(user), m_status(status) {
+	ChatRoomInvitationDecision(uint32_t invitationId, ChatRoom chatRoom, AddRelationStatus status)
+		: m_invitationId(invitationId), m_chatRoom(chatRoom), m_status(status) {
 	}
-	auto Tie()& { return std::tie(m_invitationId, m_user, m_status); }
-	auto Tie() const& { return std::tie(m_invitationId, m_user, m_status); }
+	auto Tie()& { return std::tie(m_invitationId, m_chatRoom, m_status); }
+	auto Tie() const& { return std::tie(m_invitationId, m_chatRoom, m_status); }
 };
 
 struct UserIdRequest {
@@ -299,8 +307,8 @@ struct AuthResponse
 
 	AuthResponse() = default;
 
-	auto Tie()& { return std::tie(m_user, m_offlineMessages, m_friends, m_chatRooms, m_error_msg); }
-	auto Tie() const& { return std::tie(m_user, m_offlineMessages, m_friends, m_chatRooms, m_error_msg); }
+	auto Tie()& { return std::tie(m_user, m_offlineMessages, m_friends, m_friendInvitations, m_chatRooms, m_chatRoomInvitations, m_error_msg); }
+	auto Tie() const& { return std::tie(m_user, m_offlineMessages, m_friends, m_friendInvitations, m_chatRooms, m_chatRoomInvitations, m_error_msg); }
 };
 
 struct UserResponse {
@@ -309,6 +317,17 @@ struct UserResponse {
 	UserResponse() = default;
 	auto Tie()& { return std::tie(m_user, m_error_msg); }
 	auto Tie() const& { return std::tie(m_user, m_error_msg); }
+};
+
+struct MessageResponse {
+	Message m_message;
+	std::string m_error_msg;
+	MessageResponse() = default;
+	MessageResponse(const Message& message, const std::string& error_msg = "")
+		: m_message(message), m_error_msg(error_msg) {
+	}
+	auto Tie()& { return std::tie(m_message, m_error_msg); }
+	auto Tie() const& { return std::tie(m_message, m_error_msg); }
 };
 
 struct CreateChatRoomRequest
@@ -387,6 +406,14 @@ struct AddFriendRequest {
 	}
 	auto Tie()& { return std::tie(m_userId, m_friendId); }
 	auto Tie() const& { return std::tie(m_userId, m_friendId); }
+};
+
+struct FriendInvitationResponse {
+	FriendInvitation m_invitation;
+	std::string m_error_msg;
+	FriendInvitationResponse() = default;
+	auto Tie()& { return std::tie(m_invitation, m_error_msg); }
+	auto Tie() const& { return std::tie(m_invitation, m_error_msg); }
 };
 
 struct HandleInvitationRequest {

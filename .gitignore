@@ -51,6 +51,7 @@ Makefile
 # VSCode 配置文件
 # ======================
 .vscode/
+.VSCodeCounter
 
 # ======================
 # Visual Studio 文件（如使用）

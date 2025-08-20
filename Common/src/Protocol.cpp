@@ -201,7 +201,7 @@ std::vector<ProtocolResponse::Ptr> ProtocolCodec::UnPackProtocolResponse(std::ve
 		if (buffer.size() < offset + sizeof(msg->m_requestId))
 			break;
 		std::memcpy(&msg->m_requestId, buffer.data() + offset, sizeof(msg->m_requestId));
-		offset += msg->m_requestId;
+		offset += sizeof(msg->m_requestId);
 		checkSum += CRC32::Instance().CalCheckSum(reinterpret_cast<const char*>(&msg->m_requestId), sizeof(msg->m_requestId));
 
 		uint32_t pushTypeLength;

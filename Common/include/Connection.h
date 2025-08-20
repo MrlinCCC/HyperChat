@@ -1,4 +1,3 @@
-
 #pragma once
 #include <iostream>
 #include "Logger.h"
@@ -22,6 +21,7 @@ public:
 	void CloseConnection(); //Ö÷¶¯¶Ï¿ª
 	uint32_t GetConnId() const;
 	std::vector<char>& GetReadBuf();
+	std::queue<std::string>& GetSendQueue();
 	~Connection();
 
 private:

@@ -5,6 +5,7 @@
 #include "UncopybleAndUnmovable.h"
 #include <unordered_map>
 #include "functional"
+#include <stack>
 
 template <typename T, typename = void>
 struct HasFromMap : std::false_type
@@ -46,7 +47,7 @@ public:
 		if constexpr (sizeof...(args) > 0)
 		{
 			int idx = 1;
-			BindValue(stmt, idx++, std::forward<Args>(args));
+			(BindValue(stmt, idx++, std::forward<Args>(args)), ...);
 		}
 
 		std::vector<T> result;
@@ -118,7 +119,7 @@ public:
 			modifiedQuery += " RETURNING *";
 		}
 
-		SQLite::Statement stmt(*connection, query);
+		SQLite::Statement stmt(*connection, modifiedQuery);
 
 		if constexpr (sizeof...(args) > 0)
 		{
@@ -126,9 +127,9 @@ public:
 			(stmt.bind(idx++, std::forward<Args>(args)), ...);
 		}
 
-		if (!stmt.executeStep())
-		{
-			p_sqlPool->ReleaseConnectionIfNotInTransaction(connection);
+
+		if (!stmt.executeStep()) {
+			ReleaseConnectionIfNotInTransaction(connection);
 			throw std::runtime_error("Insert failed or no row returned.");
 		}
 
@@ -139,7 +140,7 @@ public:
 			row[stmt.getColumnName(i)] = stmt.getColumn(i).getText();
 		}
 
-		RetConnection(connection);
+		ReleaseConnectionIfNotInTransaction(connection);
 		return T::FromMap(row);
 	}
 
@@ -171,4 +172,5 @@ private:
 	std::shared_ptr<SQLiteConnectionPool> p_sqlPool;
 
 	thread_local static std::shared_ptr<SQLite::Database> m_currentTransactionConn;
+	thread_local static std::stack<std::string> m_savepointStack;
 };
