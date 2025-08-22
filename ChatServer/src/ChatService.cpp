@@ -4,56 +4,56 @@
 ChatService::ChatService()
 {
 	InitDatabase();
-	using RegisterHandlerT = std::function<StatusResponse(const Connection::Ptr&, const AuthRequest&, Status&)>;
+	using RegisterHandlerT = std::function<StatusResponse(const Connection::Ptr &, const AuthRequest &, Status &)>;
 	auto registerHandler = std::bind(&ChatService::RegisterHandler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 	RegisterServiceHandler<RegisterHandlerT, AuthRequest, StatusResponse>(MethodType::Register, registerHandler);
 
-	using LoginHandlerT = std::function<AuthResponse(const Connection::Ptr&, const AuthRequest&, Status&)>;
+	using LoginHandlerT = std::function<AuthResponse(const Connection::Ptr &, const AuthRequest &, Status &)>;
 	auto loginHandler = std::bind(&ChatService::LoginHandler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 	RegisterServiceHandler<LoginHandlerT, AuthRequest, AuthResponse>(MethodType::Login, loginHandler);
 
-	using LoginOutHandlerT = std::function<StatusResponse(const Connection::Ptr&, const UserIdRequest&, Status&)>;
+	using LoginOutHandlerT = std::function<StatusResponse(const Connection::Ptr &, const UserIdRequest &, Status &)>;
 	auto loginOutHandler = std::bind(&ChatService::LogoutHandler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 	RegisterServiceHandler<LoginOutHandlerT, UserIdRequest, StatusResponse>(MethodType::Logout, loginOutHandler);
 
-	using CreateChatRoomHandlerT = std::function<ChatRoomResponse(const Connection::Ptr&, const CreateChatRoomRequest&, Status&)>;
+	using CreateChatRoomHandlerT = std::function<ChatRoomResponse(const Connection::Ptr &, const CreateChatRoomRequest &, Status &)>;
 	auto createChatRoomHandler = std::bind(&ChatService::CreateChatRoomHandler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 	RegisterServiceHandler<CreateChatRoomHandlerT, CreateChatRoomRequest, ChatRoomResponse>(MethodType::CreateChatRoom, createChatRoomHandler);
 
-	using InviteToChatRoomT = std::function<ChatRoomInvitationResponse(const Connection::Ptr&, const InviteToChatRoomRequest&, Status&)>;
+	using InviteToChatRoomT = std::function<ChatRoomInvitationResponse(const Connection::Ptr &, const InviteToChatRoomRequest &, Status &)>;
 	auto inviteToChatRoomHandler = std::bind(&ChatService::InviteToChatRoomHandler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 	RegisterServiceHandler<InviteToChatRoomT, InviteToChatRoomRequest, ChatRoomInvitationResponse>(MethodType::InviteToChatRoom, inviteToChatRoomHandler);
 
-	using AcceptChatRoomtInvitationT = std::function<ChatRoomResponse(const Connection::Ptr&, const HandleInvitationRequest&, Status&)>;
+	using AcceptChatRoomtInvitationT = std::function<ChatRoomResponse(const Connection::Ptr &, const HandleInvitationRequest &, Status &)>;
 	auto acceptChatRoomtInvitationHandler = std::bind(&ChatService::AcceptChatRoomtInvitationHandler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 	RegisterServiceHandler<AcceptChatRoomtInvitationT, HandleInvitationRequest, ChatRoomResponse>(MethodType::AcceptChatRoomInvitation, acceptChatRoomtInvitationHandler);
 
-	using RejectChatRoomtInvitationT = std::function<StatusResponse(const Connection::Ptr&, const HandleInvitationRequest&, Status&)>;
+	using RejectChatRoomtInvitationT = std::function<StatusResponse(const Connection::Ptr &, const HandleInvitationRequest &, Status &)>;
 	auto rejectChatRoomtInvitationHandler = std::bind(&ChatService::RejectChatRoomInvitationHandler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 	RegisterServiceHandler<RejectChatRoomtInvitationT, HandleInvitationRequest, StatusResponse>(MethodType::RejectChatRoomInvitation, rejectChatRoomtInvitationHandler);
 
-	using OneChatHandlerT = std::function<MessageResponse(const Connection::Ptr&, const OneChatRequest&, Status&)>;
+	using OneChatHandlerT = std::function<MessageResponse(const Connection::Ptr &, const OneChatRequest &, Status &)>;
 	auto oneChatHandler = std::bind(&ChatService::OneChatHandler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 	RegisterServiceHandler<OneChatHandlerT, OneChatRequest, MessageResponse>(MethodType::OneChat, oneChatHandler);
 
-	using GroupChatHandlerT = std::function<MessageResponse(const Connection::Ptr&, const GroupChatRequest&, Status&)>;
+	using GroupChatHandlerT = std::function<MessageResponse(const Connection::Ptr &, const GroupChatRequest &, Status &)>;
 	auto groupChatHandler = std::bind(&ChatService::GroupChatHandler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 	RegisterServiceHandler<GroupChatHandlerT, GroupChatRequest, MessageResponse>(MethodType::GroupChat, groupChatHandler);
 
-	using AddFrinedHandlerT = std::function<FriendInvitationResponse(const Connection::Ptr&, const AddFriendRequest&, Status&)>;
+	using AddFrinedHandlerT = std::function<FriendInvitationResponse(const Connection::Ptr &, const AddFriendRequest &, Status &)>;
 	auto addFrinedHandler = std::bind(&ChatService::AddFriendHandler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 	RegisterServiceHandler<AddFrinedHandlerT, AddFriendRequest, FriendInvitationResponse>(MethodType::AddFriend, addFrinedHandler);
 
-	using AcceptFriendInvitationT = std::function<UserResponse(const Connection::Ptr&, const HandleInvitationRequest&, Status&)>;
+	using AcceptFriendInvitationT = std::function<UserResponse(const Connection::Ptr &, const HandleInvitationRequest &, Status &)>;
 	auto acceptFriendInvitationHandler = std::bind(&ChatService::AcceptFriendHandler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 	RegisterServiceHandler<AcceptFriendInvitationT, HandleInvitationRequest, UserResponse>(MethodType::AcceptFriendInvitation, acceptFriendInvitationHandler);
 
-	using RejectFriendInvitationT = std::function<StatusResponse(const Connection::Ptr&, const HandleInvitationRequest&, Status&)>;
+	using RejectFriendInvitationT = std::function<StatusResponse(const Connection::Ptr &, const HandleInvitationRequest &, Status &)>;
 	auto rejectFriendInvitationHandler = std::bind(&ChatService::RejectFriendHandler, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 	RegisterServiceHandler<RejectFriendInvitationT, HandleInvitationRequest, StatusResponse>(MethodType::RejectFriendInvitation, rejectFriendInvitationHandler);
 }
 
-ChatService& ChatService::GetInstance()
+ChatService &ChatService::GetInstance()
 {
 	static ChatService service;
 	return service;
@@ -65,15 +65,15 @@ void ChatService::InitDatabase()
 	auto execuser = std::make_shared<SQLExecuser>(sqlPool);
 	p_sqlExecuser = execuser;
 	// CreateTable
-	constexpr char* createUserTable = R"(
+	constexpr char *createUserTable = R"(
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT NOT NULL UNIQUE,
                 password TEXT NOT NULL
             );
         )";
-	//朋友关系表和邀请表合并
-	constexpr char* createFriendTable = R"(
+	// 鏈嬪弸鍏崇郴琛ㄥ拰閭�璇疯〃鍚堝苟
+	constexpr char *createFriendTable = R"(
             CREATE TABLE IF NOT EXISTS friends (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER NOT NULL,
@@ -83,8 +83,7 @@ void ChatService::InitDatabase()
             );
         )";
 
-
-	constexpr char* createMessageTable = R"(
+	constexpr char *createMessageTable = R"(
             CREATE TABLE IF NOT EXISTS messages (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 room_id INTEGER,
@@ -96,7 +95,7 @@ void ChatService::InitDatabase()
             );
         )";
 
-	constexpr char* createOffLineRecpTable = R"(
+	constexpr char *createOffLineRecpTable = R"(
             CREATE TABLE IF NOT EXISTS offline_recipients (
                 message_id INTEGER NOT NULL,
                 recipient_id TEXT NOT NULL,
@@ -105,15 +104,15 @@ void ChatService::InitDatabase()
             );
         )";
 
-	constexpr char* createChatRoomTable = R"(
+	constexpr char *createChatRoomTable = R"(
             CREATE TABLE IF NOT EXISTS chat_rooms (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
                 owner_id INTEGER NOT NULL
             );
         )";
-	//聊天室成员关系表和邀请表合并
-	constexpr char* createChatRoomMembersTable = R"(
+	// 鑱婂ぉ瀹ゆ垚鍛樺叧绯昏〃鍜岄個璇疯〃鍚堝苟
+	constexpr char *createChatRoomMembersTable = R"(
             CREATE TABLE IF NOT EXISTS chat_room_members (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 room_id INTEGER NOT NULL,
@@ -133,25 +132,23 @@ void ChatService::InitDatabase()
 		"CREATE INDEX IF NOT EXISTS idx_offline_recipient ON offline_recipients(recipient_id);",
 		"CREATE INDEX IF NOT EXISTS idx_chat_rooms_owner ON chat_rooms(owner_id);",
 		"CREATE INDEX IF NOT EXISTS idx_room_status ON chat_room_members(room_id, status);",
-		"CREATE INDEX IF NOT EXISTS idx_user_status ON chat_room_members(user_id, status);"
-	};
+		"CREATE INDEX IF NOT EXISTS idx_user_status ON chat_room_members(user_id, status);"};
 	std::vector<std::string> createTableSqls = {
 		createUserTable,
 		createFriendTable,
 		createOffLineRecpTable,
 		createMessageTable,
 		createChatRoomTable,
-		createChatRoomMembersTable
-	};
+		createChatRoomMembersTable};
 	createTableSqls.insert(createTableSqls.end(), indexSqls.begin(), indexSqls.end());
 	try
 	{
 		auto conn = p_sqlExecuser->BeginTransaction();
-		for (const std::string& sql : createTableSqls)
+		for (const std::string &sql : createTableSqls)
 			conn->exec(sql);
 		p_sqlExecuser->CommitTransaction();
 	}
-	catch (const std::exception& e)
+	catch (const std::exception &e)
 	{
 		p_sqlExecuser->RollbackTransaction();
 		LOG_ERROR("Occur error when creating Table", e.what());
@@ -160,29 +157,34 @@ void ChatService::InitDatabase()
 	LOG_INFO("InitDatabase Success!");
 }
 
-bool ChatService::CheckAuth(uint32_t userId, const Connection::Ptr& conn) {
+bool ChatService::CheckAuth(uint32_t userId, const Connection::Ptr &conn)
+{
 	std::lock_guard<std::mutex> lock(m_userConnMtx);
 	auto it = m_userConnMap.find(userId);
-	if (it == m_userConnMap.end()) return false;
+	if (it == m_userConnMap.end())
+		return false;
 	return it->second == conn;
 }
 
-bool ChatService::IsUserOnline(uint32_t userId) {
+bool ChatService::IsUserOnline(uint32_t userId)
+{
 	std::lock_guard<std::mutex> lock(m_userMtx);
 	return m_userMap.find(userId) != m_userMap.end();
 }
 
-const Connection::Ptr& ChatService::GetUserConnection(uint32_t userId) {
+const Connection::Ptr &ChatService::GetUserConnection(uint32_t userId)
+{
 	std::lock_guard<std::mutex> lock(m_userConnMtx);
 	auto it = m_userConnMap.find(userId);
-	if (it != m_userConnMap.end()) {
+	if (it != m_userConnMap.end())
+	{
 		return it->second;
 	}
 	static Connection::Ptr nullConnPtr = nullptr;
 	return nullConnPtr;
 }
 
-ProtocolResponse::Ptr ChatService::DispatchService(const std::shared_ptr<Connection>& conn, const ProtocolRequest::Ptr& ProtocolRequest)
+ProtocolResponse::Ptr ChatService::DispatchService(const std::shared_ptr<Connection> &conn, const ProtocolRequest::Ptr &ProtocolRequest)
 {
 	std::string method = ProtocolRequest->m_method;
 	if (m_serviceHandlerMap.find(method) == m_serviceHandlerMap.end())
@@ -195,7 +197,7 @@ ProtocolResponse::Ptr ChatService::DispatchService(const std::shared_ptr<Connect
 	return m_serviceHandlerMap[method](conn, ProtocolRequest);
 }
 
-StatusResponse ChatService::RegisterHandler(const Connection::Ptr& conn, const AuthRequest& request, Status& status)
+StatusResponse ChatService::RegisterHandler(const Connection::Ptr &conn, const AuthRequest &request, Status &status)
 {
 	StatusResponse response;
 	if (request.m_username.empty() || request.m_passwd.empty())
@@ -216,7 +218,7 @@ StatusResponse ChatService::RegisterHandler(const Connection::Ptr& conn, const A
 	return response;
 }
 
-AuthResponse ChatService::LoginHandler(const Connection::Ptr& conn, const AuthRequest& request, Status& status)
+AuthResponse ChatService::LoginHandler(const Connection::Ptr &conn, const AuthRequest &request, Status &status)
 {
 	AuthResponse response;
 	if (request.m_username.empty() || request.m_passwd.empty())
@@ -261,7 +263,8 @@ AuthResponse ChatService::LoginHandler(const Connection::Ptr& conn, const AuthRe
 	response.m_user = user;
 	response.m_chatRooms = p_sqlExecuser->ExecuteQuery<ChatRoom>(QueryChatRoomByUserId, user.m_id);
 	response.m_friends = p_sqlExecuser->ExecuteQuery<User>(QueryFriendsByUserId, user.m_id);
-	for (auto& frd : response.m_friends) {
+	for (auto &frd : response.m_friends)
+	{
 		{
 			frd.m_state = IsUserOnline(frd.m_id) ? m_userMap[frd.m_id].m_state : UserState::OFFLINE;
 		}
@@ -273,7 +276,7 @@ AuthResponse ChatService::LoginHandler(const Connection::Ptr& conn, const AuthRe
 		p_sqlExecuser->ExecuteUpdate(DeleteOfflineMsgsByUserId, user.m_id); // todo client confirmation
 		p_sqlExecuser->CommitTransaction();
 	}
-	catch (const std::exception& e)
+	catch (const std::exception &e)
 	{
 		p_sqlExecuser->RollbackTransaction();
 		status = INTERNAL_ERROR;
@@ -287,9 +290,11 @@ AuthResponse ChatService::LoginHandler(const Connection::Ptr& conn, const AuthRe
 	return response;
 }
 
-StatusResponse ChatService::LogoutHandler(const Connection::Ptr& conn, const UserIdRequest& request, Status& status) {
+StatusResponse ChatService::LogoutHandler(const Connection::Ptr &conn, const UserIdRequest &request, Status &status)
+{
 	StatusResponse response;
-	if (!CheckAuth(request.m_userId, conn)) {
+	if (!CheckAuth(request.m_userId, conn))
+	{
 		status = UNAUTHORIZED;
 		response.m_error_msg = "Unauthorized access!";
 		return response;
@@ -306,14 +311,17 @@ StatusResponse ChatService::LogoutHandler(const Connection::Ptr& conn, const Use
 	return response;
 }
 
-ChatRoomResponse ChatService::CreateChatRoomHandler(const Connection::Ptr& conn, const CreateChatRoomRequest& request, Status& status) {
+ChatRoomResponse ChatService::CreateChatRoomHandler(const Connection::Ptr &conn, const CreateChatRoomRequest &request, Status &status)
+{
 	ChatRoomResponse response;
-	if (!CheckAuth(request.m_ownerId, conn)) {
+	if (!CheckAuth(request.m_ownerId, conn))
+	{
 		status = UNAUTHORIZED;
 		response.m_error_msg = "Unauthorized access!";
 		return response;
 	}
-	if (request.m_name.empty()) {
+	if (request.m_name.empty())
+	{
 		status = BAD_REQUEST;
 		response.m_error_msg = "Chat room name is empty!";
 		return response;
@@ -325,7 +333,7 @@ ChatRoomResponse ChatService::CreateChatRoomHandler(const Connection::Ptr& conn,
 		p_sqlExecuser->ExecuteUpdate(InsertChatRoomMember, response.m_chatRoom.m_id, request.m_ownerId, ChatRoomRole::OWNER, AddRelationStatus::ACCEPTED, nullptr);
 		p_sqlExecuser->CommitTransaction();
 	}
-	catch (const std::exception& e)
+	catch (const std::exception &e)
 	{
 		p_sqlExecuser->RollbackTransaction();
 		status = INTERNAL_ERROR;
@@ -336,15 +344,18 @@ ChatRoomResponse ChatService::CreateChatRoomHandler(const Connection::Ptr& conn,
 	return response;
 }
 
-ChatRoomInvitationResponse ChatService::InviteToChatRoomHandler(const Connection::Ptr& conn, const InviteToChatRoomRequest& request, Status& status) {
+ChatRoomInvitationResponse ChatService::InviteToChatRoomHandler(const Connection::Ptr &conn, const InviteToChatRoomRequest &request, Status &status)
+{
 	ChatRoomInvitationResponse response;
-	if (!CheckAuth(request.m_inviterId, conn)) {
+	if (!CheckAuth(request.m_inviterId, conn))
+	{
 		status = UNAUTHORIZED;
 		response.m_error_msg = "Unauthorized access!";
 		return response;
 	}
 	auto results = p_sqlExecuser->ExecuteQuery<ChatRoomMember>(QueryChatRoomMemberByCrIdAndUId, request.m_roomId, request.m_inviteeId);
-	if (results.size() > 0) {
+	if (results.size() > 0)
+	{
 		status = BAD_REQUEST;
 		response.m_error_msg = "User has already in chat room!";
 		return response;
@@ -352,8 +363,7 @@ ChatRoomInvitationResponse ChatService::InviteToChatRoomHandler(const Connection
 	p_sqlExecuser->BeginTransaction();
 	try
 	{
-		auto member = p_sqlExecuser->ExecuteUpdateAndReturn<ChatRoomMember>
-			(InsertChatRoomMember, request.m_roomId, request.m_inviteeId, ChatRoomRole::MEMBER, AddRelationStatus::PENDING, request.m_inviterId);
+		auto member = p_sqlExecuser->ExecuteUpdateAndReturn<ChatRoomMember>(InsertChatRoomMember, request.m_roomId, request.m_inviteeId, ChatRoomRole::MEMBER, AddRelationStatus::PENDING, request.m_inviterId);
 		response.m_invitation.m_id = member.m_id;
 		{
 			std::lock_guard<std::mutex> lock(m_userMtx);
@@ -366,7 +376,7 @@ ChatRoomInvitationResponse ChatService::InviteToChatRoomHandler(const Connection
 		}
 		p_sqlExecuser->CommitTransaction();
 	}
-	catch (const std::exception& e)
+	catch (const std::exception &e)
 	{
 		p_sqlExecuser->RollbackTransaction();
 		status = INTERNAL_ERROR;
@@ -378,15 +388,18 @@ ChatRoomInvitationResponse ChatService::InviteToChatRoomHandler(const Connection
 	return response;
 }
 
-ChatRoomResponse ChatService::AcceptChatRoomtInvitationHandler(const Connection::Ptr& conn, const HandleInvitationRequest& request, Status& status) {
+ChatRoomResponse ChatService::AcceptChatRoomtInvitationHandler(const Connection::Ptr &conn, const HandleInvitationRequest &request, Status &status)
+{
 	ChatRoomResponse response;
-	if (!CheckAuth(request.m_userId, conn)) {
+	if (!CheckAuth(request.m_userId, conn))
+	{
 		status = UNAUTHORIZED;
 		response.m_error_msg = "Unauthorized access!";
 		return response;
 	}
 	auto results = p_sqlExecuser->ExecuteQuery<ChatRoomInvitation>(QueryChatRoomInvitationByIdAndUId, request.m_invitation_id, request.m_userId);
-	if (results.size() < 1) {
+	if (results.size() < 1)
+	{
 		status = BAD_REQUEST;
 		response.m_error_msg = "Invitation not found!";
 		return response;
@@ -406,15 +419,18 @@ ChatRoomResponse ChatService::AcceptChatRoomtInvitationHandler(const Connection:
 	return response;
 }
 
-StatusResponse ChatService::RejectChatRoomInvitationHandler(const Connection::Ptr& conn, const HandleInvitationRequest& request, Status& status) {
+StatusResponse ChatService::RejectChatRoomInvitationHandler(const Connection::Ptr &conn, const HandleInvitationRequest &request, Status &status)
+{
 	StatusResponse response;
-	if (!CheckAuth(request.m_userId, conn)) {
+	if (!CheckAuth(request.m_userId, conn))
+	{
 		status = UNAUTHORIZED;
 		response.m_error_msg = "Unauthorized access!";
 		return response;
 	}
 	auto results = p_sqlExecuser->ExecuteQuery<ChatRoomInvitation>(QueryChatRoomInvitationByIdAndUId, request.m_invitation_id, request.m_userId);
-	if (results.size() < 1) {
+	if (results.size() < 1)
+	{
 		status = BAD_REQUEST;
 		response.m_error_msg = "Invitation not found!";
 		return response;
@@ -433,19 +449,23 @@ StatusResponse ChatService::RejectChatRoomInvitationHandler(const Connection::Pt
 	return response;
 }
 
-MessageResponse ChatService::OneChatHandler(const Connection::Ptr& conn, const OneChatRequest& request, Status& status) {
+MessageResponse ChatService::OneChatHandler(const Connection::Ptr &conn, const OneChatRequest &request, Status &status)
+{
 	MessageResponse response;
-	if (!CheckAuth(request.m_senderId, conn)) {
+	if (!CheckAuth(request.m_senderId, conn))
+	{
 		status = UNAUTHORIZED;
 		response.m_error_msg = "Unauthorized access!";
 		return response;
 	}
-	if (request.m_receiverId == request.m_senderId) {
+	if (request.m_receiverId == request.m_senderId)
+	{
 		status = BAD_REQUEST;
 		response.m_error_msg = "Cannot send message to self!";
 		return response;
 	}
-	if (request.m_message.empty()) {
+	if (request.m_message.empty())
+	{
 		status = BAD_REQUEST;
 		response.m_error_msg = "Message is empty!";
 		return response;
@@ -458,12 +478,13 @@ MessageResponse ChatService::OneChatHandler(const Connection::Ptr& conn, const O
 		{
 			PushOnlineData<Message>(receiverConn, response.m_message, PushType::Message);
 		}
-		else {
+		else
+		{
 			p_sqlExecuser->ExecuteUpdate(InsertOfflineRecipient, response.m_message.m_id, request.m_receiverId);
 		}
 		p_sqlExecuser->CommitTransaction();
 	}
-	catch (const std::exception& e)
+	catch (const std::exception &e)
 	{
 		p_sqlExecuser->RollbackTransaction();
 		status = INTERNAL_ERROR;
@@ -475,14 +496,17 @@ MessageResponse ChatService::OneChatHandler(const Connection::Ptr& conn, const O
 	return response;
 }
 
-MessageResponse ChatService::GroupChatHandler(const Connection::Ptr& conn, const GroupChatRequest& request, Status& status) {
+MessageResponse ChatService::GroupChatHandler(const Connection::Ptr &conn, const GroupChatRequest &request, Status &status)
+{
 	MessageResponse response;
-	if (!CheckAuth(request.m_senderId, conn)) {
+	if (!CheckAuth(request.m_senderId, conn))
+	{
 		status = UNAUTHORIZED;
 		response.m_error_msg = "Unauthorized access!";
 		return response;
 	}
-	if (request.m_message.empty()) {
+	if (request.m_message.empty())
+	{
 		status = BAD_REQUEST;
 		response.m_error_msg = "Message is empty!";
 		return response;
@@ -493,8 +517,10 @@ MessageResponse ChatService::GroupChatHandler(const Connection::Ptr& conn, const
 		response.m_message = p_sqlExecuser->ExecuteUpdateAndReturn<Message>(InsertMessage, request.m_roomId, request.m_senderId, request.m_message);
 		bool isUserInChatRoom = false;
 		auto members = p_sqlExecuser->ExecuteQuery<ChatRoomMember>(QueryChatRoomMemberByCrId, request.m_roomId);
-		for (const auto& member : members) {
-			if (member.m_userId == request.m_senderId) {
+		for (const auto &member : members)
+		{
+			if (member.m_userId == request.m_senderId)
+			{
 				isUserInChatRoom = true;
 				continue;
 			}
@@ -502,7 +528,8 @@ MessageResponse ChatService::GroupChatHandler(const Connection::Ptr& conn, const
 			{
 				PushOnlineData<Message>(receiverConn, response.m_message, PushType::Message);
 			}
-			else {
+			else
+			{
 				p_sqlExecuser->ExecuteUpdate(InsertOfflineRecipient, response.m_message.m_id, member.m_userId);
 			}
 		}
@@ -510,14 +537,15 @@ MessageResponse ChatService::GroupChatHandler(const Connection::Ptr& conn, const
 		{
 			p_sqlExecuser->CommitTransaction();
 		}
-		else {
+		else
+		{
 			p_sqlExecuser->RollbackTransaction();
 			status = FORBIDDEN;
 			response.m_error_msg = "User not in group!";
 			return response;
 		}
 	}
-	catch (const std::exception& e)
+	catch (const std::exception &e)
 	{
 		p_sqlExecuser->RollbackTransaction();
 		status = INTERNAL_ERROR;
@@ -529,26 +557,31 @@ MessageResponse ChatService::GroupChatHandler(const Connection::Ptr& conn, const
 	return response;
 }
 
-FriendInvitationResponse ChatService::AddFriendHandler(const Connection::Ptr& conn, const AddFriendRequest& request, Status& status) {
+FriendInvitationResponse ChatService::AddFriendHandler(const Connection::Ptr &conn, const AddFriendRequest &request, Status &status)
+{
 	FriendInvitationResponse response;
-	if (!CheckAuth(request.m_userId, conn)) {
+	if (!CheckAuth(request.m_userId, conn))
+	{
 		status = UNAUTHORIZED;
 		response.m_error_msg = "Unauthorized access!";
 		return response;
 	}
-	if (request.m_friendId == request.m_userId) {
+	if (request.m_friendId == request.m_userId)
+	{
 		status = BAD_REQUEST;
 		response.m_error_msg = "Cannot add self as friend!";
 		return response;
 	}
 	auto results = p_sqlExecuser->ExecuteQuery<FriendRelation>(
 		QueryFriendRelationsByUserIdAndFrdId, request.m_userId, request.m_friendId, request.m_friendId, request.m_userId);
-	if (results.size() > 0 && results[0].m_status == AddRelationStatus::ACCEPTED) {
+	if (results.size() > 0 && results[0].m_status == AddRelationStatus::ACCEPTED)
+	{
 		status = BAD_REQUEST;
 		response.m_error_msg = "Friend already exists!";
 		return response;
 	}
-	if (results.size() > 0 && results[0].m_status == AddRelationStatus::PENDING) {
+	if (results.size() > 0 && results[0].m_status == AddRelationStatus::PENDING)
+	{
 		status = BAD_REQUEST;
 		response.m_error_msg = "Friend request is pending!";
 		return response;
@@ -559,29 +592,33 @@ FriendInvitationResponse ChatService::AddFriendHandler(const Connection::Ptr& co
 		std::lock_guard<std::mutex> lock(m_userMtx);
 		response.m_invitation.m_inviter = m_userMap[request.m_userId];
 	}
-	if (auto friendConn = GetUserConnection(request.m_friendId)) {
+	if (auto friendConn = GetUserConnection(request.m_friendId))
+	{
 		PushOnlineData<FriendInvitation>(friendConn, response.m_invitation, PushType::FriendInvitation);
 	}
 	status = SUCCESS;
 	return response;
 }
 
-UserResponse ChatService::AcceptFriendHandler(const Connection::Ptr& conn, const HandleInvitationRequest& request, Status& status) {
+UserResponse ChatService::AcceptFriendHandler(const Connection::Ptr &conn, const HandleInvitationRequest &request, Status &status)
+{
 	UserResponse response;
-	if (!CheckAuth(request.m_userId, conn)) {
+	if (!CheckAuth(request.m_userId, conn))
+	{
 		status = UNAUTHORIZED;
 		response.m_error_msg = "Unauthorized access!";
 		return response;
 	}
 	auto results = p_sqlExecuser->ExecuteQuery<FriendRelation>(QueryFriendRelationByIdAndUId, request.m_invitation_id, request.m_userId);
-	if (results.size() < 1) {
+	if (results.size() < 1)
+	{
 		status = BAD_REQUEST;
 		response.m_error_msg = "Invitation not found!";
 		return response;
 	}
 	auto invitation = results[0];
 	p_sqlExecuser->ExecuteUpdate(UpdateFriendStatus, AddRelationStatus::ACCEPTED, request.m_invitation_id);
-	p_sqlExecuser->ExecuteUpdate(InsertFriend, invitation.m_friendId, invitation.m_userId, AddRelationStatus::ACCEPTED); //双向关系
+	p_sqlExecuser->ExecuteUpdate(InsertFriend, invitation.m_friendId, invitation.m_userId, AddRelationStatus::ACCEPTED); // 鍙屽悜鍏崇郴
 	if (auto userConn = GetUserConnection(invitation.m_userId))
 	{
 		{
@@ -597,22 +634,26 @@ UserResponse ChatService::AcceptFriendHandler(const Connection::Ptr& conn, const
 		decision.m_status = AddRelationStatus::ACCEPTED;
 		PushOnlineData<FriendInvitationDecision>(userConn, decision, PushType::FriendInvitationDesicion);
 	}
-	else {
+	else
+	{
 		response.m_user = p_sqlExecuser->ExecuteQuery<User>(QueryUserById, invitation.m_userId)[0];
 	}
 	status = SUCCESS;
 	return response;
 }
 
-StatusResponse ChatService::RejectFriendHandler(const Connection::Ptr& conn, const HandleInvitationRequest& request, Status& status) {
+StatusResponse ChatService::RejectFriendHandler(const Connection::Ptr &conn, const HandleInvitationRequest &request, Status &status)
+{
 	StatusResponse response;
-	if (!CheckAuth(request.m_userId, conn)) {
+	if (!CheckAuth(request.m_userId, conn))
+	{
 		status = UNAUTHORIZED;
 		response.m_error_msg = "Unauthorized access!";
 		return response;
 	}
 	auto results = p_sqlExecuser->ExecuteQuery<FriendRelation>(QueryFriendRelationByIdAndUId, request.m_invitation_id, request.m_userId);
-	if (results.size() < 1) {
+	if (results.size() < 1)
+	{
 		status = BAD_REQUEST;
 		response.m_error_msg = "Invitation not found!";
 		return response;

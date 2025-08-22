@@ -49,7 +49,8 @@ TEST(TestThreadPool, ExceptionTest)
     }
     catch (const std::runtime_error &e)
     {
-        assert(std::string(e.what()) == "Test exception");
+        std::string err(e.what());
+        assert(err == "Test exception");
     }
     std::future<int> res1 = pool.SubmitTask(add<int>, 1, 2);
     EXPECT_EQ(res1.get(), 3);

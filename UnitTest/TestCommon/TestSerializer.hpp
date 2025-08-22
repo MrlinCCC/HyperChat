@@ -3,12 +3,14 @@
 #include "Serializer.hpp"
 #include "unordered_set"
 
-enum Test_Enum {
+enum Test_Enum
+{
 	test_1,
 	test_2
 };
 
-enum class Test_Enum_Class {
+enum class Test_Enum_Class
+{
 	test_class_1,
 	test_class_2
 };
@@ -51,31 +53,31 @@ TEST(TestSerializer, SerializePrimitive)
 
 TEST(TestSerializer, SerializeContainer)
 {
-	std::vector<int> values1 = { 1, 2, 3, 4 };
+	std::vector<int> values1 = {1, 2, 3, 4};
 	std::string serialized1 = Serializer::Serialize(values1);
 	std::vector<int> deserialized1 = Serializer::DeSerialize<std::vector<int>>(serialized1);
 	EXPECT_EQ(deserialized1, values1);
-	std::map<int, int> values2 = { {1, 10}, {2, 20}, {3, 30}, {4, 40} };
+	std::map<int, int> values2 = {{1, 10}, {2, 20}, {3, 30}, {4, 40}};
 	std::string serialized2 = Serializer::Serialize(values2);
 	std::map<int, int> deserialized2 = Serializer::DeSerialize<std::map<int, int>>(serialized2);
 	EXPECT_EQ(deserialized2, values2);
-	std::set<int> values3 = { 1, 2, 3, 4 };
+	std::set<int> values3 = {1, 2, 3, 4};
 	std::string serialized3 = Serializer::Serialize(values3);
 	std::set<int> deserialized3 = Serializer::DeSerialize<std::set<int>>(serialized3);
 	EXPECT_EQ(deserialized3, values3);
-	std::unordered_map<int, std::string> values4 = { {1, "one"}, {2, "two"}, {3, "three"} };
+	std::unordered_map<int, std::string> values4 = {{1, "one"}, {2, "two"}, {3, "three"}};
 	std::string serialized4 = Serializer::Serialize(values4);
 	std::unordered_map<int, std::string> deserialized4 = Serializer::DeSerialize<std::unordered_map<int, std::string>>(serialized4);
 	EXPECT_EQ(deserialized4, values4);
-	std::unordered_set<int> values5 = { 1, 2, 3, 4 };
+	std::unordered_set<int> values5 = {1, 2, 3, 4};
 	std::string serialized5 = Serializer::Serialize(values5);
 	std::unordered_set<int> deserialized5 = Serializer::DeSerialize<std::unordered_set<int>>(serialized5);
 	EXPECT_EQ(deserialized5, values5);
-	std::deque<int> values6 = { 1, 2, 3, 4 };
+	std::deque<int> values6 = {1, 2, 3, 4};
 	std::string serialized6 = Serializer::Serialize(values6);
 	std::deque<int> deserialized6 = Serializer::DeSerialize<std::deque<int>>(serialized6);
 	EXPECT_EQ(deserialized6, values6);
-	std::list<int> values7 = { 1, 2, 3, 4 };
+	std::list<int> values7 = {1, 2, 3, 4};
 	std::string serialized7 = Serializer::Serialize(values7);
 	std::list<int> deserialized7 = Serializer::DeSerialize<std::list<int>>(serialized7);
 	EXPECT_EQ(deserialized7, values7);
@@ -83,14 +85,14 @@ TEST(TestSerializer, SerializeContainer)
 
 TEST(TestSerializer, SerializeContainerWithComplexTypes)
 {
-	std::vector<std::pair<int, std::string>> values = { {1, "one"}, {2, "two"}, {3, "three"} };
+	std::vector<std::pair<int, std::string>> values = {{1, "one"}, {2, "two"}, {3, "three"}};
 	std::string serialized = Serializer::Serialize(values);
 	std::vector<std::pair<int, std::string>> deserialized = Serializer::DeSerialize<std::vector<std::pair<int, std::string>>>(serialized);
 	EXPECT_EQ(deserialized, values);
 
 	std::vector<std::map<int, std::string>> nested_map = {
 		{{1, "a"}, {2, "b"}},
-		{{3, "c"}, {4, "d"}} };
+		{{3, "c"}, {4, "d"}}};
 	std::string serialized_map = Serializer::Serialize(nested_map);
 	std::vector<std::map<int, std::string>> deserialized_map = Serializer::DeSerialize<std::vector<std::map<int, std::string>>>(serialized_map);
 	EXPECT_EQ(deserialized_map, nested_map);
@@ -116,14 +118,14 @@ public:
 	std::string name;
 
 	TestCustomSerializeClass() : id(0), name("") {}
-	TestCustomSerializeClass(int id, const std::string& name) : id(id), name(name) {}
+	TestCustomSerializeClass(int id, const std::string &name) : id(id), name(name) {}
 
 	std::string Serialize() const
 	{
 		return std::to_string(id) + "|" + name;
 	}
 
-	size_t DeSerialize(const std::string& value)
+	size_t DeSerialize(const std::string &value)
 	{
 		size_t sep = value.find('|');
 		if (sep == std::string::npos)
@@ -136,6 +138,11 @@ public:
 	}
 
 	auto Tie()
+	{
+		return std::tie(id, name);
+	}
+
+	auto Tie() const
 	{
 		return std::tie(id, name);
 	}
@@ -157,10 +164,10 @@ public:
 	std::string name;
 
 	TestClassWithTie() : id(0), name("") {}
-	TestClassWithTie(int id, const std::string& name) : id(id), name(name) {}
+	TestClassWithTie(int id, const std::string &name) : id(id), name(name) {}
 
-	auto Tie()& { return std::tie(id, name); }
-	auto Tie() const& { return std::tie(id, name); }
+	auto Tie() & { return std::tie(id, name); }
+	auto Tie() const & { return std::tie(id, name); }
 };
 
 TEST(TestSerializer, SerializeClassWithTie)

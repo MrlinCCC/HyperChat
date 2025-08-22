@@ -3,20 +3,21 @@
 
 ChatServer::ChatServer(unsigned short port, size_t threadNum)
 	: m_tcpServer(port),
-	m_servicePool(threadNum),
-	m_isRunning(false)
+	  m_servicePool(threadNum),
+	  m_isRunning(false)
 {
 	auto handleProtocolMessage = std::bind(&ChatServer::OnProtocolRequest, this, std::placeholders::_1, std::placeholders::_2);
 	m_tcpServer.SetOnMessage(handleProtocolMessage);
-	m_tcpServer.SetDisConnection([](Connection::Ptr conn) {
-		Status status;
-		ChatService::GetInstance().LogoutHandler(conn, UserIdRequest{ conn->GetUserId() }, status);
-		if (status != SUCCESS) {
-			LOG_ERROR("DisConnect logout fail error!");
-		}
-		conn->CloseConnection();
-
-		});
+	m_tcpServer.SetDisConnection([](Connection::Ptr conn)
+								 {
+									 Status status;
+									 ChatService::GetInstance().LogoutHandler(conn, UserIdRequest{conn->GetUserId()}, status);
+									 if (status != SUCCESS)
+									 {
+										 LOG_ERROR("DisConnect logout fail error!");
+									 }
+									 conn->CloseConnection();
+								 });
 	m_handleProtocolRequest = std::bind(&ChatServer::HandleProtocolRequest, this, std::placeholders::_1, std::placeholders::_2);
 }
 
@@ -50,17 +51,17 @@ void ChatServer::SetHandleProtocolRequest(HandleProtocolRequestCallback handlePr
 	}
 }
 
-void ChatServer::OnProtocolRequest(const Connection::Ptr& connection, std::size_t length)
+void ChatServer::OnProtocolRequest(const Connection::Ptr &connection, std::size_t length)
 {
-	auto& buffer = connection->GetReadBuf();
+	auto &buffer = connection->GetReadBuf();
 	auto protocolRequests = ProtocolCodec::Instance().UnPackProtocolRequest(buffer);
-	for (const auto& protocolRequest : protocolRequests)
+	for (const auto &protocolRequest : protocolRequests)
 	{
 		m_handleProtocolRequest(connection, protocolRequest);
 	}
 }
 
-void ChatServer::HandleProtocolRequest(const Connection::Ptr& connection, const ProtocolRequest::Ptr& req)
+void ChatServer::HandleProtocolRequest(const Connection::Ptr &connection, const ProtocolRequest::Ptr &req)
 {
 	auto conn = connection->shared_from_this();
 	if (m_isRunning)
