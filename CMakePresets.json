@@ -1,22 +1,18 @@
 {
-  "version": 2,
-  "configurePresets": [
-    {
-      "name": "vcpkg",
-      "generator": "Visual Studio 17 2022",
-      "binaryDir": "${sourceDir}/build",
-      "cacheVariables": {
-        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-        "CMAKE_PREFIX_PATH": "C:/Users/linC/app/programming/Qt/6.4.1/msvc2019_64/lib/cmake/Qt6;C:/Users/linC/app/programming/Qt/6.4.1/msvc2019_64/lib/cmake",
-        "DWINDEPLOYQT_EXECUTABLE":"C:/Users/linC/app/programming/Qt/6.4.1/msvc2019_64/bin/windeployqt.exe"
-      }
-    },
-    {
-      "name": "default",
-      "inherits": "vcpkg",
-      "environment": {
-        "VCPKG_ROOT": "C:/Users/linC/app/programming/vcpkg"
-      }
-    }
-  ]
+    "version": 3,
+    "configurePresets": [
+        {
+            "name": "default",
+            "generator": "Visual Studio 17 2022",
+            "binaryDir": "${sourceDir}/build",
+            "environment": {
+                "VCPKG_ROOT": "C:/Users/linC/app/programming/vcpkg"
+            },
+            "cacheVariables": {
+                "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+                "CMAKE_PREFIX_PATH": "C:/Users/linC/app/programming/Qt/6.4.1/msvc2019_64/lib/cmake/Qt6;C:/Users/linC/app/programming/Qt/6.4.1/msvc2019_64/lib/cmake",
+                "DWINDEPLOYQT_EXECUTABLE": "C:/Users/linC/app/programming/Qt/6.4.1/msvc2019_64/bin/windeployqt.exe"
+            }
+        }
+    ]
 }

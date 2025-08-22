@@ -37,10 +37,17 @@ int main(int argc, char* argv[])
     //    }
     //    std::string ip = argv[1];
     //    std::string port = argv[2];
-    //    InitLogger();
-    //    Host host(ip, port);
-    //    ChatClient client(host);
-    //    std::thread clientThread(&ChatClient::ConnectServer, &client);
-    //    clientThread.detach();
+
+    std::string ip = "127.0.0.1";
+    std::string port = "8888";
+    InitLogger();
+    Host host(ip, port);
+    ChatClient client(host);
+    w.SetChatClient(&client);
+    std::thread clientThread([&client]() {
+        client.ConnectServer();
+        client.Run();
+    });
+    clientThread.detach();
     return a.exec();
 }

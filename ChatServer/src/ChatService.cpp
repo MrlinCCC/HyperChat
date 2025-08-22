@@ -257,6 +257,7 @@ AuthResponse ChatService::LoginHandler(const Connection::Ptr& conn, const AuthRe
 		user.m_state = UserState::ONLINE;
 		m_userMap[user.m_id] = user;
 	}
+	conn->SetUserId(user.m_id);
 	response.m_user = user;
 	response.m_chatRooms = p_sqlExecuser->ExecuteQuery<ChatRoom>(QueryChatRoomByUserId, user.m_id);
 	response.m_friends = p_sqlExecuser->ExecuteQuery<User>(QueryFriendsByUserId, user.m_id);

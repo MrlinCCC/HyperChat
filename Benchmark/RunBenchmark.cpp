@@ -1,5 +1,6 @@
 #include <benchmark/benchmark.h>
 #include "BenchmarkLog.hpp"
+#include "BenchmarkSerializer.hpp"
 
 int main(int argc, char **argv)
 {

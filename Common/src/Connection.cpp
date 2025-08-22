@@ -1,7 +1,7 @@
 #include "Connection.h"
 #include "Utils.hpp"
 
-Connection::Connection(asio::ip::tcp::socket&& socket) : m_socket(std::move(socket))
+Connection::Connection(asio::ip::tcp::socket &&socket) : m_socket(std::move(socket))
 {
 	m_readBuf.resize(CONNECTION_BUFFER_SIZE);
 	m_connId = GenerateAutoIncrementId<Connection>();
@@ -16,7 +16,7 @@ void Connection::AsyncReadMessage()
 {
 	auto self = shared_from_this();
 	m_socket.async_read_some(asio::buffer(m_readBuf), [self](std::error_code ec, std::size_t length)
-		{
+							 {
 			if (ec == asio::error::operation_aborted) {
 				return;
 			}
@@ -39,7 +39,7 @@ void Connection::AsyncReadMessage()
 			self->AsyncReadMessage(); });
 }
 
-void Connection::AsyncWriteMessage(const std::string& message)
+void Connection::AsyncWriteMessage(const std::string &message)
 {
 	bool write_in_progress;
 	{
@@ -57,10 +57,10 @@ void Connection::AsyncWriteNextMessage()
 	if (m_sendQueue.empty())
 		return;
 
-	const std::string& message = m_sendQueue.front();
+	const std::string &message = m_sendQueue.front();
 	auto self = shared_from_this();
 	asio::async_write(m_socket, asio::buffer(message.data(), message.size()), [self](std::error_code ec, std::size_t length)
-		{
+					  {
 			if (ec == asio::error::operation_aborted) {
 				return;
 			}
@@ -106,7 +106,7 @@ void Connection::CloseConnection()
 {
 	std::unique_lock<std::mutex> lock(m_sendQueMtx);
 	m_sendQueCV.wait(lock, [this]()
-		{ return m_sendQueue.empty(); });
+					 { return m_sendQueue.empty(); });
 	if (m_socket.is_open())
 	{
 		m_socket.cancel();
@@ -114,25 +114,12 @@ void Connection::CloseConnection()
 	}
 }
 
-void Connection::SetMessageCallback(const MessageCallback& onMessage)
+void Connection::SetMessageCallback(const MessageCallback &onMessage)
 {
 	m_onMessage = onMessage;
 }
 
-void Connection::SetDisConnectCallback(const DisConnctCallback& disConnect) {
+void Connection::SetDisConnectCallback(const DisConnectCallback &disConnect)
+{
 	m_disConnect = disConnect;
-}
-
-std::vector<char>& Connection::GetReadBuf()
-{
-	return m_readBuf;
-}
-
-std::queue<std::string>& Connection::GetSendQueue() {
-	return m_sendQueue;
-}
-
-uint32_t Connection::GetConnId() const
-{
-	return m_connId;
 }

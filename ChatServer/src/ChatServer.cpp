@@ -9,8 +9,13 @@ ChatServer::ChatServer(unsigned short port, size_t threadNum)
 	auto handleProtocolMessage = std::bind(&ChatServer::OnProtocolRequest, this, std::placeholders::_1, std::placeholders::_2);
 	m_tcpServer.SetOnMessage(handleProtocolMessage);
 	m_tcpServer.SetDisConnection([](Connection::Ptr conn) {
-		ChatService::GetInstance().DisConnect(conn);
+		Status status;
+		ChatService::GetInstance().LogoutHandler(conn, UserIdRequest{ conn->GetUserId() }, status);
+		if (status != SUCCESS) {
+			LOG_ERROR("DisConnect logout fail error!");
+		}
 		conn->CloseConnection();
+
 		});
 	m_handleProtocolRequest = std::bind(&ChatServer::HandleProtocolRequest, this, std::placeholders::_1, std::placeholders::_2);
 }

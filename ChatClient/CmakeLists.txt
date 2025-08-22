@@ -15,9 +15,8 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools)
 set(TS_FILES ChatClient_zh_CN.ts)
 set(RESOURCE_FILES resources.qrc)
 set(CLIENT_SOURCE
-    ChatServiceStub.h ChatServiceStub.cpp
     ChatClient.h ChatClient.cpp
-    ProtocolResponseHandler.h ProtocolResponseHandler.cpp)
+    Spinner.h Spinner.cpp)
 
 set(PROJECT_SOURCES
         main.cpp
@@ -72,16 +71,27 @@ install(TARGETS ChatClient
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+# exec windeployqt
+set(DEPLOY_DIR "${CMAKE_BINARY_DIR}/ChatClient/${CMAKE_BUILD_TYPE}")
+set(DEPLOY_FLAG "${DEPLOY_DIR}/deployed.flag")
+file(MAKE_DIRECTORY "${DEPLOY_DIR}")
 
 if(QT_VERSION_MAJOR EQUAL 6)
+    find_package(Qt6 COMPONENTS Core Gui Widgets REQUIRED)
     qt_finalize_executable(ChatClient)
-    set(DEPLOY_FLAG "${CMAKE_BINARY_DIR}/ChatClient/${CMAKE_BUILD_TYPE}/deployed.flag")
-    if(WIN32 AND TARGET ChatClient AND NOT EXISTS "${DEPLOY_FLAG}")
-        add_custom_command(
-            TARGET ChatClient POST_BUILD
-            COMMAND "${DWINDEPLOYQT_EXECUTABLE}" "${CMAKE_BINARY_DIR}/ChatClient/${CMAKE_BUILD_TYPE}/ChatClient.exe"
-            COMMAND ${CMAKE_COMMAND} -E touch "${CMAKE_BINARY_DIR}/deployed.flag"
-            COMMENT "Deploying Qt dependencies with windeployqt only on first build..."
-        )
-    endif()
+    target_link_libraries(ChatClient PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets)
+elseif(QT_VERSION_MAJOR EQUAL 5)
+    find_package(Qt5 COMPONENTS Core Gui Widgets REQUIRED)
+    target_link_libraries(ChatClient PRIVATE Qt5::Core Qt5::Gui Qt5::Widgets)
+else()
+    message(FATAL_ERROR "Unsupported Qt version")
+endif()
+
+if(WIN32 AND TARGET ChatClient AND NOT EXISTS "${DEPLOY_FLAG}")
+    add_custom_command(
+        TARGET ChatClient POST_BUILD
+        COMMAND "${DWINDEPLOYQT_EXECUTABLE}" "${DEPLOY_DIR}/ChatClient.exe"
+        COMMAND ${CMAKE_COMMAND} -E touch "${DEPLOY_FLAG}"
+        COMMENT "Deploying Qt dependencies with windeployqt..."
+    )
 endif()

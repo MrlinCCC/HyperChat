@@ -9,25 +9,43 @@ class Connection : public std::enable_shared_from_this<Connection>, public Uncop
 {
 public:
 	using Ptr = std::shared_ptr<Connection>;
-	using MessageCallback = std::function<void(const Connection::Ptr&, std::size_t)>;
-	using DisConnctCallback = std::function<void(const Connection::Ptr&)>;
+	using MessageCallback = std::function<void(const Connection::Ptr &, std::size_t)>;
+	using DisConnectCallback = std::function<void(const Connection::Ptr &)>;
 
-	Connection(asio::ip::tcp::socket&& socket);
+	Connection(asio::ip::tcp::socket &&socket);
 	void AsyncReadMessage();
-	void AsyncWriteMessage(const std::string& message);
+	void AsyncWriteMessage(const std::string &message);
 	bool Connect(asio::ip::tcp::resolver::results_type endpoint);
-	void SetMessageCallback(const MessageCallback&);
-	void SetDisConnectCallback(const DisConnctCallback&); //被动断开
-	void CloseConnection(); //主动断开
-	uint32_t GetConnId() const;
-	std::vector<char>& GetReadBuf();
-	std::queue<std::string>& GetSendQueue();
+	void SetMessageCallback(const MessageCallback &);
+	void SetDisConnectCallback(const DisConnectCallback &); // 琚姩鏂紑
+	void CloseConnection();									// 涓诲姩鏂紑
+	uint32_t GetConnId() const
+	{
+		return m_connId;
+	}
+	inline void SetUserId(uint32_t id)
+	{ // 缁戝畾鐧诲綍鐢ㄦ埛Id
+		m_userId = id;
+	}
+	inline uint32_t GetUserId() const
+	{
+		return m_userId;
+	}
+	inline std::vector<char> &GetReadBuf()
+	{ // 鐢ㄤ簬鍗忚瑙ｆ瀽
+		return m_readBuf;
+	}
+	inline std::queue<std::string> &GetSendQueue()
+	{ // 鐢ㄤ簬娴嬭瘯
+		return m_sendQueue;
+	}
 	~Connection();
 
 private:
 	void AsyncWriteNextMessage();
 
 	uint32_t m_connId;
+	uint32_t m_userId;
 	asio::ip::tcp::socket m_socket;
 	std::vector<char> m_readBuf;
 	std::queue<std::string> m_sendQueue;
@@ -35,5 +53,5 @@ private:
 	std::condition_variable m_sendQueCV;
 
 	MessageCallback m_onMessage;
-	DisConnctCallback m_disConnect;
+	DisConnectCallback m_disConnect;
 };

@@ -8,7 +8,7 @@
 #include <mutex>
 #include <condition_variable>
 
-#define EPOCH 100000
+constexpr int epoch = 100000;
 
 static std::once_flag init_flag;
 static void InitializeLogger()
@@ -29,12 +29,12 @@ static void BM_LogBenchmark(benchmark::State &state)
     std::string msg(40, '*');
     for (auto _ : state)
     {
-        for (int i = 0; i < EPOCH; ++i)
+        for (int i = 0; i < epoch; ++i)
         {
             LOG_INFO("log info %d %s", i, msg.data());
         }
     }
-    state.SetItemsProcessed(static_cast<int64_t>(state.iterations()) * EPOCH);
+    state.SetItemsProcessed(static_cast<int64_t>(state.iterations()) * epoch);
 }
 
 BENCHMARK(BM_LogBenchmark)->Threads(1)->Iterations(8);

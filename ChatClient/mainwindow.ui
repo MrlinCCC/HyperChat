@@ -167,7 +167,7 @@ QPushButton:pressed {
              <number>40</number>
             </property>
             <item>
-             <widget class="QLineEdit" name="lineEdit">
+             <widget class="QLineEdit" name="login_username">
               <property name="text">
                <string/>
               </property>
@@ -180,7 +180,7 @@ QPushButton:pressed {
              </widget>
             </item>
             <item>
-             <widget class="QLineEdit" name="lineEdit_2">
+             <widget class="QLineEdit" name="login_passwd">
               <property name="echoMode">
                <enum>QLineEdit::PasswordEchoOnEdit</enum>
               </property>
@@ -196,7 +196,7 @@ QPushButton:pressed {
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="pushButton">
+             <widget class="QPushButton" name="loginButton">
               <property name="text">
                <string>登录</string>
               </property>
@@ -207,6 +207,12 @@ QPushButton:pressed {
          </layout>
         </widget>
         <widget class="QWidget" name="widget">
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>333</height>
+          </size>
+         </property>
          <attribute name="title">
           <string>注册</string>
          </attribute>
@@ -223,7 +229,7 @@ QPushButton:pressed {
              <number>40</number>
             </property>
             <item>
-             <widget class="QLineEdit" name="lineEdit_3">
+             <widget class="QLineEdit" name="register_username">
               <property name="alignment">
                <set>Qt::AlignCenter</set>
               </property>
@@ -233,7 +239,7 @@ QPushButton:pressed {
              </widget>
             </item>
             <item>
-             <widget class="QLineEdit" name="lineEdit_5">
+             <widget class="QLineEdit" name="register_passwd1">
               <property name="echoMode">
                <enum>QLineEdit::PasswordEchoOnEdit</enum>
               </property>
@@ -246,7 +252,7 @@ QPushButton:pressed {
              </widget>
             </item>
             <item>
-             <widget class="QLineEdit" name="lineEdit_4">
+             <widget class="QLineEdit" name="register_passwd2">
               <property name="echoMode">
                <enum>QLineEdit::PasswordEchoOnEdit</enum>
               </property>
@@ -259,7 +265,7 @@ QPushButton:pressed {
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="pushButton_2">
+             <widget class="QPushButton" name="registerButton">
               <property name="text">
                <string>注册</string>
               </property>
@@ -271,11 +277,29 @@ QPushButton:pressed {
         </widget>
        </widget>
       </item>
+      <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
+       <widget class="Spinner" name="spinner" native="true">
+        <property name="maximumSize">
+         <size>
+          <width>30</width>
+          <height>30</height>
+         </size>
+        </property>
+       </widget>
+      </item>
      </layout>
     </item>
    </layout>
   </widget>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>Spinner</class>
+   <extends>QWidget</extends>
+   <header>spinner.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
