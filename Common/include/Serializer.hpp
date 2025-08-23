@@ -151,6 +151,79 @@ SerializedSize(const Cls &obj)
 	return sizeof(obj);
 }
 
+// Variant
+template <typename T>
+inline std::enable_if_t<std::is_unsigned_v<T>, void> SerializeVariant(T data, std::vector<char> &out)
+{
+	while (data >= 0x80)
+	{ // 128
+		out.push_back(static_cast<char>((data & 0x7F) | 0x80));
+		data >>= 7;
+	}
+	out.push_back(static_cast<char>(data));
+}
+
+template <typename T>
+inline std::enable_if_t<std::is_unsigned_v<T>, void> DeserializeVariant(T &data, const std::vector<char> &buffer, size_t &offset)
+{
+	data = 0;
+	int shift = 0;
+	while (buffer.size() >= offset + 1)
+	{
+		uint8_t byte = buffer[offset++];
+		data |= (byte & 0x7F) << shift;
+		if (!(byte & 0x80))
+			return;
+		shift += 7;
+	}
+	throw std::runtime_error("Unexpected end of buffer while decoding Varint");
+}
+
+template <typename T>
+std::make_unsigned_t<T> EncodeZigZag(T n)
+{
+	using U = std::make_unsigned_t<T>;
+	return static_cast<U>((n << 1) ^ (n >> (sizeof(T) * 8 - 1)));
+}
+
+template <typename U>
+auto DecodeZigZag(U n) -> std::make_signed_t<U>
+{
+	using S = std::make_signed_t<U>;
+	return static_cast<S>((n >> 1) ^ -static_cast<S>(n & 1));
+}
+
+template <typename T>
+struct IsInteger : std::bool_constant<
+					   std::is_integral_v<T> &&
+					   !std::is_same_v<T, bool> &&
+					   !std::is_same_v<T, char> &&
+					   !std::is_same_v<T, signed char> &&
+					   !std::is_same_v<T, unsigned char>>
+{
+};
+
+template <typename T>
+inline constexpr bool IsIntegerV = IsInteger<T>::value;
+
+template <typename T>
+struct CanUseVariant : std::bool_constant<
+						   IsIntegerV<T> && std::is_unsigned_v<T>>
+{
+};
+
+template <typename T>
+inline constexpr bool CanUseVariantV = CanUseVariant<T>::value;
+
+template <typename T>
+struct CanUseZigZag : std::bool_constant<
+						  IsIntegerV<T> && std::is_signed_v<T>>
+{
+};
+
+template <typename T>
+inline constexpr bool CanUseZigZagV = CanUseZigZag<T>::value;
+
 // Serializer
 class Serializer
 {
@@ -193,13 +266,61 @@ public:
 		}
 	}
 
+	template <typename T>
+	static std::vector<char> SerializeRaw(const T &value)
+	{
+		try
+		{
+			std::vector<char> buffer;
+			size_t initSize = SerializedSize(value);
+			buffer.reserve(initSize);
+			SerializeImp(value, buffer);
+			return buffer;
+		}
+		catch (const std::exception &e)
+		{
+			throw std::runtime_error("SerializeImp failed: " + std::string(e.what()));
+		}
+	}
+
+	template <typename T>
+	static T DeSerializeRaw(const std::vector<char> &buffer)
+	{
+		if (buffer.empty())
+		{
+			throw std::runtime_error("DeSerialize called with empty string.");
+		}
+		try
+		{
+			T data;
+			size_t size = 0;
+			DeSerializeImp(data, buffer, size);
+			return data;
+		}
+		catch (const std::exception &e)
+		{
+			throw std::runtime_error("DeSerializeImp failed: " + std::string(e.what()));
+		}
+	}
+
 private:
 	template <typename T>
 	static std::enable_if_t<std::is_arithmetic_v<T>, void>
 	SerializeImp(const T &data, std::vector<char> &out)
 	{
-		const char *ptr = reinterpret_cast<const char *>(&data);
-		out.insert(out.end(), ptr, ptr + sizeof(T));
+		if constexpr (CanUseVariantV<T>)
+		{
+			SerializeVariant(data, out);
+		}
+		else if constexpr (CanUseZigZagV<T>)
+		{
+			SerializeVariant(EncodeZigZag(data), out);
+		}
+		else
+		{
+			const char *ptr = reinterpret_cast<const char *>(&data);
+			out.insert(out.end(), ptr, ptr + sizeof(T));
+		}
 	}
 
 	template <typename T>
@@ -213,8 +334,7 @@ private:
 	static std::enable_if_t<IsContainerV<Container>, void>
 	SerializeImp(const Container &container, std::vector<char> &out)
 	{
-		uint64_t size = static_cast<uint64_t>(container.size());
-		SerializeImp(size, out);
+		SerializeVariant(container.size(), out);
 		for (const auto &item : container)
 		{
 			SerializeImp(item, out);
@@ -250,12 +370,25 @@ private:
 	static std::enable_if_t<std::is_arithmetic_v<T>, void>
 	DeSerializeImp(T &data, const std::vector<char> &buffer, size_t &offset)
 	{
-		if (offset + sizeof(T) > buffer.size())
+		if constexpr (CanUseVariantV<T>)
 		{
-			throw std::runtime_error("Buffer too small to deserialize arithmetic type.");
+			DeserializeVariant(data, buffer, offset);
 		}
-		std::memcpy(&data, buffer.data() + offset, sizeof(T));
-		offset += sizeof(T);
+		else if constexpr (CanUseZigZagV<T>)
+		{
+			std::make_unsigned_t<T> udata;
+			DeserializeVariant(udata, buffer, offset);
+			data = DecodeZigZag(udata);
+		}
+		else
+		{
+			if (offset + sizeof(T) > buffer.size())
+			{
+				throw std::runtime_error("Buffer too small to deserialize arithmetic type.");
+			}
+			std::memcpy(&data, buffer.data() + offset, sizeof(T));
+			offset += sizeof(T);
+		}
 	}
 
 	template <typename T>
@@ -272,13 +405,8 @@ private:
 	DeSerializeImp(Container &data, const std::vector<char> &buffer, size_t &offset)
 	{
 		using ValueType = typename Container::value_type;
-		uint64_t size64;
-		DeSerializeImp(size64, buffer, offset);
-		if (size64 > SIZE_MAX)
-		{
-			throw std::overflow_error("Size too large to fit into size_t");
-		}
-		size_t size = static_cast<size_t>(size64);
+		size_t size;
+		DeserializeVariant(size, buffer, offset);
 		data.clear();
 		TryReserve(data, size);
 		if constexpr (IsMapContainerV<Container>)

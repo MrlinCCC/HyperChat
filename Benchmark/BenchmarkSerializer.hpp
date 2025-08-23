@@ -7,52 +7,74 @@ constexpr int vectorSize = 10000;
 
 struct Profile
 {
+    uint32_t uid{};
     int32_t id{};
     double score{};
     std::string name;
+    std::vector<uint32_t> utags;
     std::vector<int32_t> tags;
+    std::map<std::string, uint64_t> ukv;
     std::map<std::string, int64_t> kv;
 
     auto Tie()
     {
-        return std::tie(id, score, name, tags, kv);
+        return std::tie(uid, id, score, name, utags, tags, ukv, kv);
     }
     auto Tie() const
     {
-        return std::tie(id, score, name, tags, kv);
+        return std::tie(uid, id, score, name, utags, tags, ukv, kv);
     }
 };
 
 static Json::Value ToJson(const Profile &p)
 {
     Json::Value j;
+    j["uid"] = Json::UInt(p.uid);
     j["id"] = p.id;
     j["score"] = p.score;
     j["name"] = p.name;
+
+    for (auto t : p.utags)
+        j["utags"].append(Json::UInt(t));
     for (auto t : p.tags)
         j["tags"].append(t);
+
+    for (auto &kv : p.ukv)
+        j["ukv"][kv.first] = Json::UInt64(kv.second);
     for (auto &kv : p.kv)
         j["kv"][kv.first] = Json::Int64(kv.second);
+
     return j;
 }
 
 static Profile FromJson(const Json::Value &j)
 {
     Profile p;
+    p.uid = j["uid"].asUInt();
     p.id = j["id"].asInt();
     p.score = j["score"].asDouble();
     p.name = j["name"].asString();
+
+    for (auto &t : j["utags"])
+        p.utags.push_back(t.asUInt());
     for (auto &t : j["tags"])
         p.tags.push_back(t.asInt());
+
+    auto ukvs = j["ukv"].getMemberNames();
+    for (auto &k : ukvs)
+        p.ukv[k] = j["ukv"][k].asUInt64();
+
     auto kvs = j["kv"].getMemberNames();
     for (auto &k : kvs)
         p.kv[k] = j["kv"][k].asInt64();
+
     return p;
 }
 
 static Profile MakeRandomProfile(std::mt19937_64 &rng)
 {
-    std::uniform_int_distribution<int32_t> di(1, 1000000);
+    std::uniform_int_distribution<uint32_t> udi(0, 10000);
+    std::uniform_int_distribution<int32_t> di(-10000, 10000);
     std::uniform_real_distribution<double> dd(0.0, 10000.0);
     std::uniform_int_distribution<int> len_name(5, 20);
     std::uniform_int_distribution<int> len_tags(3, 10);
@@ -60,6 +82,7 @@ static Profile MakeRandomProfile(std::mt19937_64 &rng)
     std::uniform_int_distribution<int> dc('a', 'z');
 
     Profile p;
+    p.uid = udi(rng);
     p.id = di(rng);
     p.score = dd(rng);
 
@@ -69,18 +92,23 @@ static Profile MakeRandomProfile(std::mt19937_64 &rng)
         p.name[i] = static_cast<char>(dc(rng));
 
     int ntags = len_tags(rng);
+    p.utags.resize(ntags);
     p.tags.resize(ntags);
     for (int i = 0; i < ntags; ++i)
+    {
+        p.utags[i] = udi(rng);
         p.tags[i] = di(rng);
+    }
 
     int nkv = len_kv(rng);
     for (int i = 0; i < nkv; ++i)
     {
-        int klen = 5 + (di(rng) % 10);
+        int klen = 5 + (len_tags(rng) % 10);
         std::string key;
         key.resize(klen);
         for (int j = 0; j < klen; ++j)
             key[j] = static_cast<char>(dc(rng));
+        p.ukv.emplace(std::move(key), static_cast<uint64_t>(udi(rng)));
         p.kv.emplace(std::move(key), static_cast<int64_t>(di(rng)));
     }
     return p;

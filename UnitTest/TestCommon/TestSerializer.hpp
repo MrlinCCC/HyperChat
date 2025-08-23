@@ -3,7 +3,7 @@
 #include "Serializer.hpp"
 #include "unordered_set"
 
-enum Test_Enum
+enum Test_Enum : uint8_t
 {
 	test_1,
 	test_2
