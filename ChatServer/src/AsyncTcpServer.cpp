@@ -24,7 +24,6 @@ void AsyncTcpServer::Run()
 	m_isRunning = true;
 	m_rwContextPool.Run();
 	m_connContext.run();
-	m_allAsyncFinish.Release();
 }
 
 void AsyncTcpServer::Shutdown()
@@ -37,14 +36,13 @@ void AsyncTcpServer::Shutdown()
 			m_acceptor.cancel();
 			m_acceptor.close();
 		}
-		m_rwContextPool.Shutdown();
 		std::lock_guard<std::mutex> lock(m_connsMtx);
 		for (auto &[id, connection] : m_connections)
 		{
 			connection->CloseConnection();
 		}
+		m_rwContextPool.Shutdown();
 		m_workGuard.reset();
-		m_allAsyncFinish.Acquire();
 		LOG_INFO("TcpServer shutdown!");
 	}
 }
@@ -73,6 +71,7 @@ void AsyncTcpServer::AsyncAcceptConnection()
 			}
 
 			auto newConnPtr = std::make_shared<Connection>(std::move(newSocket));
+			newConnPtr->SetState(ConnectionState::CONNECTED);
 			if (m_onMessage)
 				newConnPtr->SetMessageCallback(m_onMessage);
 			if (m_disConnect)
@@ -82,6 +81,8 @@ void AsyncTcpServer::AsyncAcceptConnection()
 				m_connections.insert(std::make_pair(newConnPtr->GetConnId(), newConnPtr));
 			}
 			newConnPtr->AsyncReadMessage();
+			auto remote = newConnPtr->GetSocket().remote_endpoint();
+			LOG_INFO("Accepted new connection: remote={}:{}",remote.address().to_string().c_str(),remote.port());
 			AsyncAcceptConnection(); });
 }
 

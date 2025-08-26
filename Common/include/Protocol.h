@@ -41,9 +41,9 @@ struct ProtocolResponse
 class CRC32 : public UncopybleAndUnmovable
 {
 public:
-	static CRC32& Instance();
+	static CRC32 &Instance();
 
-	uint32_t CalCheckSum(const char* data, size_t length) const;
+	uint32_t CalCheckSum(const char *data, size_t length) const;
 
 private:
 	CRC32();
@@ -57,15 +57,15 @@ private:
 class ProtocolCodec : public UncopybleAndUnmovable
 {
 public:
-	static ProtocolCodec& Instance();
+	static ProtocolCodec &Instance();
 
-	std::string PackProtocolRequest(const ProtocolRequest::Ptr& msg);
-	std::string PackProtocolResponse(const ProtocolResponse::Ptr& msg);
+	std::string PackProtocolRequest(const ProtocolRequest::Ptr &msg);
+	std::string PackProtocolResponse(const ProtocolResponse::Ptr &msg);
 
-	std::vector<ProtocolRequest::Ptr> UnPackProtocolRequest(std::vector<char>& buffer);
-	std::vector<ProtocolResponse::Ptr> UnPackProtocolResponse(std::vector<char>& buffer);
+	std::vector<ProtocolRequest::Ptr> UnPackProtocolRequest(std::vector<char> &buffer, std::size_t length);
+	std::vector<ProtocolResponse::Ptr> UnPackProtocolResponse(std::vector<char> &buffer, std::size_t length);
 
 private:
 	ProtocolCodec() = default;
-	void SyncToMagic(std::vector<char>& buffer);
+	void SyncToMagic(std::vector<char> &buffer, std::size_t &length);
 };

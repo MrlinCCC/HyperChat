@@ -5,6 +5,14 @@
 #include <asio.hpp>
 #define CONNECTION_BUFFER_SIZE 1024
 
+enum class ConnectionState
+{
+	DISCONNECTED,
+	CONNECTED,
+	CLOSING,
+	CLOSED
+};
+
 class Connection : public std::enable_shared_from_this<Connection>, public UncopybleAndUnmovable
 {
 public:
@@ -16,10 +24,29 @@ public:
 	void AsyncReadMessage();
 	void AsyncWriteMessage(const std::string &message);
 	bool Connect(asio::ip::tcp::resolver::results_type endpoint);
-	void SetMessageCallback(const MessageCallback &);
-	void SetDisConnectCallback(const DisConnectCallback &); // 被动断开
-	void CloseConnection();									// 主动断开
-	uint32_t GetConnId() const
+	bool Connect(const std::string &host, uint16_t port);
+	void CloseConnection(); // 主动断开
+	inline ConnectionState GetState(ConnectionState state)
+	{
+		return m_state;
+	}
+	inline void SetState(ConnectionState state)
+	{
+		m_state = state;
+	}
+	inline void SetMessageCallback(const MessageCallback &onMessage)
+	{
+		m_onMessage = onMessage;
+	}
+	inline void SetDisConnectCallback(const DisConnectCallback &disConnect) // 被动断开
+	{
+		m_disConnect = disConnect;
+	}
+	inline const asio::ip::tcp::socket &GetSocket() const
+	{
+		return m_socket;
+	}
+	inline uint32_t GetConnId() const
 	{
 		return m_connId;
 	}
@@ -54,4 +81,6 @@ private:
 
 	MessageCallback m_onMessage;
 	DisConnectCallback m_disConnect;
+
+	ConnectionState m_state;
 };

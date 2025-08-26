@@ -7,8 +7,8 @@
 class ChatServiceProtocolTest : public ::testing::Test
 {
 protected:
-	ChatService& m_service = ChatService::GetInstance();
-	const std::shared_ptr<SQLExecuser>& m_execuser = m_service.GetSQLExecuser();
+	ChatService &m_service = ChatService::GetInstance();
+	const std::shared_ptr<SQLExecuser> &m_execuser = m_service.GetSQLExecuser();
 	std::vector<User> m_users;
 	std::vector<FriendRelation> m_friendRelations;
 	std::vector<ChatRoom> m_chatrooms;
@@ -28,85 +28,57 @@ protected:
 
 	void InsertTest()
 	{
-		m_users.push_back(m_execuser->ExecuteUpdateAndReturn<User>
-			("INSERT INTO users (username, password) VALUES ('testuser', '" + Sha256("testpass") + "')"));
-		m_users.push_back(m_execuser->ExecuteUpdateAndReturn<User>
-			("INSERT INTO users (username, password) VALUES ('friendtest', '" + Sha256("testfriendpass") + "')"));
-		m_users.push_back(m_execuser->ExecuteUpdateAndReturn<User>
-			("INSERT INTO users (username, password) VALUES ('friendtest1', '" + Sha256("testfriendpass1") + "')"));
-		m_users.push_back(m_execuser->ExecuteUpdateAndReturn<User>
-			("INSERT INTO users (username, password) VALUES ('friendtest2', '" + Sha256("testfriendpass2") + "')"));
-		m_users.push_back(m_execuser->ExecuteUpdateAndReturn<User>
-			("INSERT INTO users (username, password) VALUES ('friendtest3', '" + Sha256("testfriendpass3") + "')"));
+		m_users.push_back(m_execuser->ExecuteUpdateAndReturn<User>("INSERT INTO users (username, password) VALUES ('testuser', '" + Sha256("testpass") + "')"));
+		m_users.push_back(m_execuser->ExecuteUpdateAndReturn<User>("INSERT INTO users (username, password) VALUES ('friendtest', '" + Sha256("testfriendpass") + "')"));
+		m_users.push_back(m_execuser->ExecuteUpdateAndReturn<User>("INSERT INTO users (username, password) VALUES ('friendtest1', '" + Sha256("testfriendpass1") + "')"));
+		m_users.push_back(m_execuser->ExecuteUpdateAndReturn<User>("INSERT INTO users (username, password) VALUES ('friendtest2', '" + Sha256("testfriendpass2") + "')"));
+		m_users.push_back(m_execuser->ExecuteUpdateAndReturn<User>("INSERT INTO users (username, password) VALUES ('friendtest3', '" + Sha256("testfriendpass3") + "')"));
 		m_friendRelations.push_back(m_execuser->ExecuteUpdateAndReturn<FriendRelation>(
-			"INSERT INTO friends (user_id, friend_id, status) VALUES (" + std::to_string(m_users[0].m_id) + ", " + std::to_string(m_users[1].m_id) + ", " + " 1)")
-		);
+			"INSERT INTO friends (user_id, friend_id, status) VALUES (" + std::to_string(m_users[0].m_id) + ", " + std::to_string(m_users[1].m_id) + ", " + " 1)"));
 		m_friendRelations.push_back(m_execuser->ExecuteUpdateAndReturn<FriendRelation>(
-			"INSERT INTO friends (user_id, friend_id, status) VALUES (" + std::to_string(m_users[1].m_id) + ", " + std::to_string(m_users[0].m_id) + ", " + " 1)")
-		);
+			"INSERT INTO friends (user_id, friend_id, status) VALUES (" + std::to_string(m_users[1].m_id) + ", " + std::to_string(m_users[0].m_id) + ", " + " 1)"));
 		m_friendRelations.push_back(m_execuser->ExecuteUpdateAndReturn<FriendRelation>(
-			"INSERT INTO friends (user_id, friend_id, status) VALUES (" + std::to_string(m_users[0].m_id) + ", " + std::to_string(m_users[3].m_id) + ", " + " 1)")
-		);
+			"INSERT INTO friends (user_id, friend_id, status) VALUES (" + std::to_string(m_users[0].m_id) + ", " + std::to_string(m_users[3].m_id) + ", " + " 1)"));
 		m_friendRelations.push_back(m_execuser->ExecuteUpdateAndReturn<FriendRelation>(
-			"INSERT INTO friends (user_id, friend_id, status) VALUES (" + std::to_string(m_users[3].m_id) + ", " + std::to_string(m_users[0].m_id) + ", " + " 1)")
-		);
+			"INSERT INTO friends (user_id, friend_id, status) VALUES (" + std::to_string(m_users[3].m_id) + ", " + std::to_string(m_users[0].m_id) + ", " + " 1)"));
 		m_friendRelations.push_back(m_execuser->ExecuteUpdateAndReturn<FriendRelation>(
-			"INSERT INTO friends (user_id, friend_id, status) VALUES (" + std::to_string(m_users[4].m_id) + ", " + std::to_string(m_users[0].m_id) + ", " + " 0)")
-		);
+			"INSERT INTO friends (user_id, friend_id, status) VALUES (" + std::to_string(m_users[4].m_id) + ", " + std::to_string(m_users[0].m_id) + ", " + " 0)"));
 		m_friendRelations.push_back(m_execuser->ExecuteUpdateAndReturn<FriendRelation>(
-			"INSERT INTO friends (user_id, friend_id, status) VALUES (" + std::to_string(m_users[2].m_id) + ", " + std::to_string(m_users[3].m_id) + ", " + " 0)")
-		);
+			"INSERT INTO friends (user_id, friend_id, status) VALUES (" + std::to_string(m_users[2].m_id) + ", " + std::to_string(m_users[3].m_id) + ", " + " 0)"));
 		m_chatrooms.push_back(m_execuser->ExecuteUpdateAndReturn<ChatRoom>(
-			"INSERT INTO chat_rooms (name, owner_id) VALUES ('Test Room', " + std::to_string(m_users[0].m_id) + ")")
-		);
+			"INSERT INTO chat_rooms (name, owner_id) VALUES ('Test Room', " + std::to_string(m_users[0].m_id) + ")"));
 		m_chatrooms.push_back(m_execuser->ExecuteUpdateAndReturn<ChatRoom>(
-			"INSERT INTO chat_rooms (name, owner_id) VALUES ('Test Room', " + std::to_string(m_users[2].m_id) + ")")
-		);
+			"INSERT INTO chat_rooms (name, owner_id) VALUES ('Test Room', " + std::to_string(m_users[2].m_id) + ")"));
 		m_chatrooms.push_back(m_execuser->ExecuteUpdateAndReturn<ChatRoom>(
-			"INSERT INTO chat_rooms (name, owner_id) VALUES ('Test Room1', " + std::to_string(m_users[3].m_id) + ")")
-		);
+			"INSERT INTO chat_rooms (name, owner_id) VALUES ('Test Room1', " + std::to_string(m_users[3].m_id) + ")"));
 		m_chatroomMembers.push_back(m_execuser->ExecuteUpdateAndReturn<ChatRoomMember>(
-			"INSERT INTO chat_room_members (room_id, user_id, status, role) VALUES (" + std::to_string(m_chatrooms[0].m_id) + ", " + std::to_string(m_users[0].m_id) + ", 1, 2)")
-		);
+			"INSERT INTO chat_room_members (room_id, user_id, status, role) VALUES (" + std::to_string(m_chatrooms[0].m_id) + ", " + std::to_string(m_users[0].m_id) + ", 1, 2)"));
 		m_chatroomMembers.push_back(m_execuser->ExecuteUpdateAndReturn<ChatRoomMember>(
-			"INSERT INTO chat_room_members (room_id, user_id, status, role) VALUES (" + std::to_string(m_chatrooms[0].m_id) + ", " + std::to_string(m_users[1].m_id) + ", 1, 2)")
-		);
+			"INSERT INTO chat_room_members (room_id, user_id, status, role) VALUES (" + std::to_string(m_chatrooms[0].m_id) + ", " + std::to_string(m_users[1].m_id) + ", 1, 2)"));
 		m_chatroomMembers.push_back(m_execuser->ExecuteUpdateAndReturn<ChatRoomMember>(
-			"INSERT INTO chat_room_members (room_id, user_id, status, role) VALUES (" + std::to_string(m_chatrooms[0].m_id) + ", " + std::to_string(m_users[2].m_id) + ", 1, 0)")
-		);
+			"INSERT INTO chat_room_members (room_id, user_id, status, role) VALUES (" + std::to_string(m_chatrooms[0].m_id) + ", " + std::to_string(m_users[2].m_id) + ", 1, 0)"));
 		m_chatroomMembers.push_back(m_execuser->ExecuteUpdateAndReturn<ChatRoomMember>(
-			"INSERT INTO chat_room_members (room_id, user_id, status, role) VALUES (" + std::to_string(m_chatrooms[1].m_id) + ", " + std::to_string(m_users[3].m_id) + ", 1, 2)")
-		);
+			"INSERT INTO chat_room_members (room_id, user_id, status, role) VALUES (" + std::to_string(m_chatrooms[1].m_id) + ", " + std::to_string(m_users[3].m_id) + ", 1, 2)"));
 		m_chatroomMembers.push_back(m_execuser->ExecuteUpdateAndReturn<ChatRoomMember>(
-			"INSERT INTO chat_room_members (room_id, user_id, status, role) VALUES (" + std::to_string(m_chatrooms[1].m_id) + ", " + std::to_string(m_users[1].m_id) + ", 1, 1)")
-		);
+			"INSERT INTO chat_room_members (room_id, user_id, status, role) VALUES (" + std::to_string(m_chatrooms[1].m_id) + ", " + std::to_string(m_users[1].m_id) + ", 1, 1)"));
 		m_chatroomMembers.push_back(m_execuser->ExecuteUpdateAndReturn<ChatRoomMember>(
-			"INSERT INTO chat_room_members (room_id, user_id, status, role) VALUES (" + std::to_string(m_chatrooms[2].m_id) + ", " + std::to_string(m_users[3].m_id) + ", 1, 1)")
-		);
+			"INSERT INTO chat_room_members (room_id, user_id, status, role) VALUES (" + std::to_string(m_chatrooms[2].m_id) + ", " + std::to_string(m_users[3].m_id) + ", 1, 1)"));
 		m_chatroomMembers.push_back(m_execuser->ExecuteUpdateAndReturn<ChatRoomMember>(
-			"INSERT INTO chat_room_members (room_id, user_id, inviter_id, status, role) VALUES (" + std::to_string(m_chatrooms[2].m_id) + ", " + std::to_string(m_users[0].m_id) + ", " + std::to_string(m_users[3].m_id) + ", 0, 1)")
-		);
+			"INSERT INTO chat_room_members (room_id, user_id, inviter_id, status, role) VALUES (" + std::to_string(m_chatrooms[2].m_id) + ", " + std::to_string(m_users[0].m_id) + ", " + std::to_string(m_users[3].m_id) + ", 0, 1)"));
 		m_messages.push_back(m_execuser->ExecuteUpdateAndReturn<Message>(
-			"INSERT INTO messages (room_id, sender_id, message) VALUES (NULL, " + std::to_string(m_users[0].m_id) + ", " + " 'Test private message')")
-		);
+			"INSERT INTO messages (room_id, sender_id, message) VALUES (NULL, " + std::to_string(m_users[0].m_id) + ", " + " 'Test private message')"));
 		m_messages.push_back(m_execuser->ExecuteUpdateAndReturn<Message>(
-			"INSERT INTO messages (room_id, sender_id, message) VALUES (NULL, " + std::to_string(m_users[1].m_id) + ", " + " 'Test private message1')")
-		);
+			"INSERT INTO messages (room_id, sender_id, message) VALUES (NULL, " + std::to_string(m_users[1].m_id) + ", " + " 'Test private message1')"));
 		m_messages.push_back(m_execuser->ExecuteUpdateAndReturn<Message>(
-			"INSERT INTO messages (room_id, sender_id, message) VALUES (" + std::to_string(m_chatrooms[0].m_id) + ", " + std::to_string(m_users[1].m_id) + ", " + " 'Test public message')")
-		);
+			"INSERT INTO messages (room_id, sender_id, message) VALUES (" + std::to_string(m_chatrooms[0].m_id) + ", " + std::to_string(m_users[1].m_id) + ", " + " 'Test public message')"));
 		m_messages.push_back(m_execuser->ExecuteUpdateAndReturn<Message>(
-			"INSERT INTO messages (room_id, sender_id, message) VALUES (" + std::to_string(m_chatrooms[1].m_id) + ", " + std::to_string(m_users[2].m_id) + ", " + " 'Test public message')")
-		);
+			"INSERT INTO messages (room_id, sender_id, message) VALUES (" + std::to_string(m_chatrooms[1].m_id) + ", " + std::to_string(m_users[2].m_id) + ", " + " 'Test public message')"));
 		m_execuser->ExecuteUpdate(
-			"INSERT INTO offline_recipients (message_id, recipient_id) VALUES (" + std::to_string(m_messages[0].m_id) + ", " + std::to_string(m_users[0].m_id) + ")"
-		);
+			"INSERT INTO offline_recipients (message_id, recipient_id) VALUES (" + std::to_string(m_messages[0].m_id) + ", " + std::to_string(m_users[0].m_id) + ")");
 		m_execuser->ExecuteUpdate(
-			"INSERT INTO offline_recipients (message_id, recipient_id) VALUES (" + std::to_string(m_messages[1].m_id) + ", " + std::to_string(m_users[1].m_id) + ")"
-		);
+			"INSERT INTO offline_recipients (message_id, recipient_id) VALUES (" + std::to_string(m_messages[1].m_id) + ", " + std::to_string(m_users[1].m_id) + ")");
 		m_execuser->ExecuteUpdate(
-			"INSERT INTO offline_recipients (message_id, recipient_id) VALUES (" + std::to_string(m_messages[2].m_id) + ", " + std::to_string(m_users[0].m_id) + ")"
-		);
+			"INSERT INTO offline_recipients (message_id, recipient_id) VALUES (" + std::to_string(m_messages[2].m_id) + ", " + std::to_string(m_users[0].m_id) + ")");
 	}
 };
 
@@ -156,19 +128,22 @@ TEST_F(ChatServiceProtocolTest, RegisterHandler)
 	EXPECT_EQ(results.size(), 1);
 }
 
-class UserLoginAndLogout {
+class UserLoginAndLogout
+{
 public:
-	UserLoginAndLogout(const Connection::Ptr& conn, const std::string& username, const std::string& password)
-		:m_conn(conn)
+	UserLoginAndLogout(const Connection::Ptr &conn, const std::string &username, const std::string &password)
+		: m_conn(conn)
 	{
 		m_user = UserLogin(m_conn, username, password);
 	}
 
-	~UserLoginAndLogout() {
+	~UserLoginAndLogout()
+	{
 		UserLogout(m_conn, m_user.m_id);
 	}
 
-	static User UserLogin(const Connection::Ptr& conn, const std::string& username, const std::string& password) {
+	static User UserLogin(const Connection::Ptr &conn, const std::string &username, const std::string &password)
+	{
 		auto request = std::make_shared<ProtocolRequest>();
 		AuthRequest login_body;
 		request->m_method = MethodType::Login;
@@ -181,7 +156,8 @@ public:
 		return respBody.m_user;
 	}
 
-	static void UserLogout(const Connection::Ptr& conn, uint32_t user_id) {
+	static void UserLogout(const Connection::Ptr &conn, uint32_t user_id)
+	{
 		auto request = std::make_shared<ProtocolRequest>();
 		UserIdRequest login_body;
 		login_body.m_userId = user_id;
@@ -189,6 +165,7 @@ public:
 		request->m_payload = Serializer::Serialize<UserIdRequest>(login_body);
 		auto response = ChatService::GetInstance().DispatchService(conn, request);
 	}
+
 private:
 	Connection::Ptr m_conn;
 	User m_user;
@@ -254,12 +231,12 @@ TEST_F(ChatServiceProtocolTest, LoginHandler)
 	respBody = Serializer::DeSerialize<AuthResponse>(response->m_payload);
 	EXPECT_EQ(response->m_status, BAD_REQUEST);
 	EXPECT_EQ(respBody.m_error_msg, "User has online!");
-	//reset
+	// reset
 	UserLoginAndLogout::UserLogout(conn, m_users[0].m_id);
 }
 
-
-TEST_F(ChatServiceProtocolTest, LogoutHandler) {
+TEST_F(ChatServiceProtocolTest, LogoutHandler)
+{
 	auto request = std::make_shared<ProtocolRequest>();
 	request->m_method = MethodType::Logout;
 	UserIdRequest body;
@@ -284,7 +261,8 @@ TEST_F(ChatServiceProtocolTest, LogoutHandler) {
 	EXPECT_TRUE(respBody.m_error_msg.empty());
 }
 
-TEST_F(ChatServiceProtocolTest, CreateChatRoomHandler) {
+TEST_F(ChatServiceProtocolTest, CreateChatRoomHandler)
+{
 	auto request = std::make_shared<ProtocolRequest>();
 	request->m_method = MethodType::CreateChatRoom;
 	CreateChatRoomRequest body;
@@ -319,7 +297,8 @@ TEST_F(ChatServiceProtocolTest, CreateChatRoomHandler) {
 	EXPECT_EQ(respBody.m_chatRoom.m_ownerId, body.m_ownerId);
 }
 
-TEST_F(ChatServiceProtocolTest, InviteToChatRoomHandler) {
+TEST_F(ChatServiceProtocolTest, InviteToChatRoomHandler)
+{
 	auto request = std::make_shared<ProtocolRequest>();
 	request->m_method = MethodType::InviteToChatRoom;
 	InviteToChatRoomRequest body;
@@ -357,7 +336,7 @@ TEST_F(ChatServiceProtocolTest, InviteToChatRoomHandler) {
 	EXPECT_TRUE(respBody.m_error_msg.empty());
 	std::string responseStr = frdConn->GetSendQueue().front();
 	frdConn->GetSendQueue().pop();
-	auto pushResp = ProtocolCodec::Instance().UnPackProtocolResponse(std::vector<char>(responseStr.begin(), responseStr.end()))[0];
+	auto pushResp = ProtocolCodec::Instance().UnPackProtocolResponse(std::vector<char>(responseStr.begin(), responseStr.end()), responseStr.size())[0];
 	auto inviteBody = Serializer::DeSerialize<ChatRoomInvitation>(pushResp->m_payload);
 	EXPECT_EQ(pushResp->m_pushType, PushType::ChatRoomInvitation);
 	EXPECT_EQ(pushResp->m_requestId, 0);
@@ -370,7 +349,8 @@ TEST_F(ChatServiceProtocolTest, InviteToChatRoomHandler) {
 	EXPECT_EQ(inviteBody.m_chatRoom.m_ownerId, m_users[0].m_id);
 }
 
-TEST_F(ChatServiceProtocolTest, AcceptChatRoomInvitationHandler) {
+TEST_F(ChatServiceProtocolTest, AcceptChatRoomInvitationHandler)
+{
 	auto request = std::make_shared<ProtocolRequest>();
 	request->m_method = MethodType::AcceptChatRoomInvitation;
 	HandleInvitationRequest body;
@@ -407,7 +387,7 @@ TEST_F(ChatServiceProtocolTest, AcceptChatRoomInvitationHandler) {
 	EXPECT_EQ(respBody.m_chatRoom.m_id, m_chatrooms[2].m_id);
 	std::string responseStr = frdConn->GetSendQueue().front();
 	frdConn->GetSendQueue().pop();
-	auto pushResp = ProtocolCodec::Instance().UnPackProtocolResponse(std::vector<char>(responseStr.begin(), responseStr.end()))[0];
+	auto pushResp = ProtocolCodec::Instance().UnPackProtocolResponse(std::vector<char>(responseStr.begin(), responseStr.end()), responseStr.size())[0];
 	auto inviteDecBody = Serializer::DeSerialize<ChatRoomInvitationDecision>(pushResp->m_payload);
 	EXPECT_EQ(pushResp->m_pushType, PushType::ChatRoomInvitationDecision);
 	EXPECT_EQ(pushResp->m_requestId, 0);
@@ -419,7 +399,8 @@ TEST_F(ChatServiceProtocolTest, AcceptChatRoomInvitationHandler) {
 	EXPECT_EQ(inviteDecBody.m_status, AddRelationStatus::ACCEPTED);
 }
 
-TEST_F(ChatServiceProtocolTest, RejectChatRoomInvitationHandler) {
+TEST_F(ChatServiceProtocolTest, RejectChatRoomInvitationHandler)
+{
 	auto request = std::make_shared<ProtocolRequest>();
 	request->m_method = MethodType::RejectChatRoomInvitation;
 	HandleInvitationRequest body;
@@ -453,7 +434,7 @@ TEST_F(ChatServiceProtocolTest, RejectChatRoomInvitationHandler) {
 	respBody = Serializer::DeSerialize<StatusResponse>(response->m_payload);
 	std::string responseStr = frdConn->GetSendQueue().front();
 	frdConn->GetSendQueue().pop();
-	auto pushResp = ProtocolCodec::Instance().UnPackProtocolResponse(std::vector<char>(responseStr.begin(), responseStr.end()))[0];
+	auto pushResp = ProtocolCodec::Instance().UnPackProtocolResponse(std::vector<char>(responseStr.begin(), responseStr.end()), responseStr.size())[0];
 	auto inviteDecBody = Serializer::DeSerialize<ChatRoomInvitationDecision>(pushResp->m_payload);
 	EXPECT_EQ(response->m_status, SUCCESS);
 	EXPECT_TRUE(respBody.m_error_msg.empty());
@@ -467,7 +448,8 @@ TEST_F(ChatServiceProtocolTest, RejectChatRoomInvitationHandler) {
 	EXPECT_EQ(inviteDecBody.m_status, AddRelationStatus::REJECTED);
 }
 
-TEST_F(ChatServiceProtocolTest, OneChatHandler) {
+TEST_F(ChatServiceProtocolTest, OneChatHandler)
+{
 	auto request = std::make_shared<ProtocolRequest>();
 	request->m_method = MethodType::OneChat;
 	OneChatRequest body;
@@ -487,7 +469,7 @@ TEST_F(ChatServiceProtocolTest, OneChatHandler) {
 	auto respBody = Serializer::DeSerialize<MessageResponse>(response->m_payload);
 	EXPECT_EQ(response->m_status, UNAUTHORIZED);
 	EXPECT_EQ(respBody.m_error_msg, "Unauthorized access!");
-	//Send to self
+	// Send to self
 	body.m_receiverId = m_users[0].m_id;
 	body.m_senderId = m_users[0].m_id;
 	request->m_payload = Serializer::Serialize<OneChatRequest>(body);
@@ -495,7 +477,7 @@ TEST_F(ChatServiceProtocolTest, OneChatHandler) {
 	respBody = Serializer::DeSerialize<MessageResponse>(response->m_payload);
 	EXPECT_EQ(response->m_status, BAD_REQUEST);
 	EXPECT_EQ(respBody.m_error_msg, "Cannot send message to self!");
-	//Message empty
+	// Message empty
 	body.m_message = "";
 	body.m_receiverId = m_users[1].m_id;
 	request->m_payload = Serializer::Serialize<OneChatRequest>(body);
@@ -503,14 +485,14 @@ TEST_F(ChatServiceProtocolTest, OneChatHandler) {
 	respBody = Serializer::DeSerialize<MessageResponse>(response->m_payload);
 	EXPECT_EQ(response->m_status, BAD_REQUEST);
 	EXPECT_EQ(respBody.m_error_msg, "Message is empty!");
-	//Success
+	// Success
 	body.m_message = "Hello, friend!";
 	request->m_payload = Serializer::Serialize<OneChatRequest>(body);
 	response = m_service.DispatchService(conn, request);
 	respBody = Serializer::DeSerialize<MessageResponse>(response->m_payload);
 	std::string responseStr = frdConn->GetSendQueue().front();
 	frdConn->GetSendQueue().pop();
-	auto pushResp = ProtocolCodec::Instance().UnPackProtocolResponse(std::vector<char>(responseStr.begin(), responseStr.end()))[0];
+	auto pushResp = ProtocolCodec::Instance().UnPackProtocolResponse(std::vector<char>(responseStr.begin(), responseStr.end()), responseStr.size())[0];
 	auto messageBody = Serializer::DeSerialize<Message>(pushResp->m_payload);
 	EXPECT_EQ(response->m_status, SUCCESS);
 	EXPECT_TRUE(respBody.m_error_msg.empty());
@@ -523,7 +505,8 @@ TEST_F(ChatServiceProtocolTest, OneChatHandler) {
 	EXPECT_EQ(messageBody.m_createdAt, respBody.m_message.m_createdAt);
 }
 
-TEST_F(ChatServiceProtocolTest, GroupChatHandler) {
+TEST_F(ChatServiceProtocolTest, GroupChatHandler)
+{
 	auto request = std::make_shared<ProtocolRequest>();
 	request->m_method = MethodType::GroupChat;
 	GroupChatRequest body;
@@ -546,7 +529,7 @@ TEST_F(ChatServiceProtocolTest, GroupChatHandler) {
 	auto respBody = Serializer::DeSerialize<MessageResponse>(response->m_payload);
 	EXPECT_EQ(response->m_status, UNAUTHORIZED);
 	EXPECT_EQ(respBody.m_error_msg, "Unauthorized access!");
-	//Message empty
+	// Message empty
 	body.m_message = "";
 	body.m_senderId = m_users[0].m_id;
 	request->m_payload = Serializer::Serialize<GroupChatRequest>(body);
@@ -554,18 +537,18 @@ TEST_F(ChatServiceProtocolTest, GroupChatHandler) {
 	respBody = Serializer::DeSerialize<MessageResponse>(response->m_payload);
 	EXPECT_EQ(response->m_status, BAD_REQUEST);
 	EXPECT_EQ(respBody.m_error_msg, "Message is empty!");
-	//Success
+	// Success
 	body.m_message = "Hello, friends!";
 	request->m_payload = Serializer::Serialize<GroupChatRequest>(body);
 	response = m_service.DispatchService(conn, request);
 	respBody = Serializer::DeSerialize<MessageResponse>(response->m_payload);
 	std::string responseStr = frd1Conn->GetSendQueue().front();
 	frd1Conn->GetSendQueue().pop();
-	auto pushResp1 = ProtocolCodec::Instance().UnPackProtocolResponse(std::vector<char>(responseStr.begin(), responseStr.end()))[0];
+	auto pushResp1 = ProtocolCodec::Instance().UnPackProtocolResponse(std::vector<char>(responseStr.begin(), responseStr.end()), responseStr.size())[0];
 	auto messageBody1 = Serializer::DeSerialize<Message>(pushResp1->m_payload);
 	responseStr = frd2Conn->GetSendQueue().front();
 	frd2Conn->GetSendQueue().pop();
-	auto pushResp2 = ProtocolCodec::Instance().UnPackProtocolResponse(std::vector<char>(responseStr.begin(), responseStr.end()))[0];
+	auto pushResp2 = ProtocolCodec::Instance().UnPackProtocolResponse(std::vector<char>(responseStr.begin(), responseStr.end()), responseStr.size())[0];
 	auto messageBody2 = Serializer::DeSerialize<Message>(pushResp2->m_payload);
 	EXPECT_EQ(response->m_status, SUCCESS);
 	EXPECT_TRUE(respBody.m_error_msg.empty());
@@ -585,7 +568,8 @@ TEST_F(ChatServiceProtocolTest, GroupChatHandler) {
 	EXPECT_EQ(messageBody2.m_message, "Hello, friends!");
 }
 
-TEST_F(ChatServiceProtocolTest, AddFriendHandler) {
+TEST_F(ChatServiceProtocolTest, AddFriendHandler)
+{
 	auto request = std::make_shared<ProtocolRequest>();
 	request->m_method = MethodType::AddFriend;
 	AddFriendRequest body;
@@ -619,7 +603,7 @@ TEST_F(ChatServiceProtocolTest, AddFriendHandler) {
 	respBody = Serializer::DeSerialize<FriendInvitationResponse>(response->m_payload);
 	EXPECT_EQ(response->m_status, BAD_REQUEST);
 	EXPECT_EQ(respBody.m_error_msg, "Friend already exists!");
-	//Request is pending
+	// Request is pending
 	body.m_friendId = m_users[4].m_id;
 	request->m_payload = Serializer::Serialize<AddFriendRequest>(body);
 	response = m_service.DispatchService(conn, request);
@@ -635,7 +619,7 @@ TEST_F(ChatServiceProtocolTest, AddFriendHandler) {
 	EXPECT_TRUE(respBody.m_error_msg.empty());
 	std::string responseStr = frd1Conn->GetSendQueue().front();
 	frd1Conn->GetSendQueue().pop();
-	auto pushResp = ProtocolCodec::Instance().UnPackProtocolResponse(std::vector<char>(responseStr.begin(), responseStr.end()))[0];
+	auto pushResp = ProtocolCodec::Instance().UnPackProtocolResponse(std::vector<char>(responseStr.begin(), responseStr.end()), responseStr.size())[0];
 	auto inviteBody = Serializer::DeSerialize<FriendInvitation>(pushResp->m_payload);
 	EXPECT_EQ(pushResp->m_pushType, PushType::FriendInvitation);
 	EXPECT_EQ(pushResp->m_requestId, 0);
@@ -645,7 +629,8 @@ TEST_F(ChatServiceProtocolTest, AddFriendHandler) {
 	EXPECT_EQ(inviteBody.m_inviter.m_username, m_users[0].m_username);
 }
 
-TEST_F(ChatServiceProtocolTest, AcceptFriendHandler) {
+TEST_F(ChatServiceProtocolTest, AcceptFriendHandler)
+{
 	auto request = std::make_shared<ProtocolRequest>();
 	request->m_method = MethodType::AcceptFriendInvitation;
 	HandleInvitationRequest body;
@@ -679,7 +664,7 @@ TEST_F(ChatServiceProtocolTest, AcceptFriendHandler) {
 	respBody = Serializer::DeSerialize<UserResponse>(response->m_payload);
 	std::string responseStr = frdConn->GetSendQueue().front();
 	frdConn->GetSendQueue().pop();
-	auto pushResp = ProtocolCodec::Instance().UnPackProtocolResponse(std::vector<char>(responseStr.begin(), responseStr.end()))[0];
+	auto pushResp = ProtocolCodec::Instance().UnPackProtocolResponse(std::vector<char>(responseStr.begin(), responseStr.end()), responseStr.size())[0];
 	auto inviteDecBody = Serializer::DeSerialize<FriendInvitationDecision>(pushResp->m_payload);
 	EXPECT_EQ(response->m_status, SUCCESS);
 	EXPECT_TRUE(respBody.m_error_msg.empty());
@@ -696,7 +681,8 @@ TEST_F(ChatServiceProtocolTest, AcceptFriendHandler) {
 	EXPECT_EQ(inviteDecBody.m_status, AddRelationStatus::ACCEPTED);
 }
 
-TEST_F(ChatServiceProtocolTest, RejectFriendHandler) {
+TEST_F(ChatServiceProtocolTest, RejectFriendHandler)
+{
 	auto request = std::make_shared<ProtocolRequest>();
 	request->m_method = MethodType::RejectFriendInvitation;
 	HandleInvitationRequest body;
@@ -730,7 +716,7 @@ TEST_F(ChatServiceProtocolTest, RejectFriendHandler) {
 	respBody = Serializer::DeSerialize<StatusResponse>(response->m_payload);
 	std::string responseStr = frdConn->GetSendQueue().front();
 	frdConn->GetSendQueue().pop();
-	auto pushResp = ProtocolCodec::Instance().UnPackProtocolResponse(std::vector<char>(responseStr.begin(), responseStr.end()))[0];
+	auto pushResp = ProtocolCodec::Instance().UnPackProtocolResponse(std::vector<char>(responseStr.begin(), responseStr.end()), responseStr.size())[0];
 	auto inviteDecBody = Serializer::DeSerialize<FriendInvitationDecision>(pushResp->m_payload);
 	EXPECT_EQ(response->m_status, SUCCESS);
 	EXPECT_TRUE(respBody.m_error_msg.empty());

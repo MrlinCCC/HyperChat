@@ -21,7 +21,7 @@ void ChatClient::ConnectServer()
 {
     asio::ip::tcp::resolver resolver(m_ioContext);
     asio::error_code ec;
-    auto endpoints = resolver.resolve(m_serverHost.hostName, m_serverHost.port, ec);
+    auto endpoints = resolver.resolve(m_serverHost.hostName, std::to_string(m_serverHost.port), ec);
     if (ec)
     {
         LOG_ERROR("Resolve fail: {}", ec.message());
@@ -50,18 +50,18 @@ void ChatClient::ConnectServer()
 void ChatClient::OnResponse(Connection::Ptr conn, std::size_t length)
 {
     auto &buffer = m_conn->GetReadBuf();
-    auto protocolResponses = ProtocolCodec::Instance().UnPackProtocolResponse(buffer);
+    auto protocolResponses = ProtocolCodec::Instance().UnPackProtocolResponse(buffer, length);
     for (const auto &protocolResponse : protocolResponses)
     {
-        if (!protocolResponse->m_requestId && protocolResponse->m_pushType.empty())
+        if (!protocolResponse->m_requestId && !protocolResponse->m_pushType.empty())
         {
             // push type
-            LOG_INFO("Push method:{} success!");
+            LOG_INFO("Push method success!");
         }
         else
         {
             // response type
-            LOG_INFO("Response method:{} success!");
+            LOG_INFO("Response method success!");
         }
     }
 }

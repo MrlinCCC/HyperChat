@@ -13,13 +13,13 @@ void InitLogger()
     SET_LOGLEVEL(DEBUG);
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
 
     QTranslator translator;
     const QStringList uiLanguages = QLocale::system().uiLanguages();
-    for (const QString& locale : uiLanguages)
+    for (const QString &locale : uiLanguages)
     {
         const QString baseName = "ChatClient_" + QLocale(locale).name();
         if (translator.load(":/i18n/" + baseName))
@@ -41,13 +41,13 @@ int main(int argc, char* argv[])
     std::string ip = "127.0.0.1";
     std::string port = "8888";
     InitLogger();
-    Host host(ip, port);
+    Host host(ip, std::atoi(port.data()));
     ChatClient client(host);
     w.SetChatClient(&client);
-    std::thread clientThread([&client]() {
+    std::thread clientThread([&client]()
+                             {
         client.ConnectServer();
-        client.Run();
-    });
+        client.Run(); });
     clientThread.detach();
     return a.exec();
 }

@@ -6,8 +6,8 @@ ChatServer::ChatServer(unsigned short port, size_t threadNum)
 	  m_servicePool(threadNum),
 	  m_isRunning(false)
 {
-	auto handleProtocolMessage = std::bind(&ChatServer::OnProtocolRequest, this, std::placeholders::_1, std::placeholders::_2);
-	m_tcpServer.SetOnMessage(handleProtocolMessage);
+	auto onProtocolMessage = std::bind(&ChatServer::OnProtocolRequest, this, std::placeholders::_1, std::placeholders::_2);
+	m_tcpServer.SetOnMessage(onProtocolMessage);
 	m_tcpServer.SetDisConnection([](Connection::Ptr conn)
 								 {
 									 Status status;
@@ -16,8 +16,7 @@ ChatServer::ChatServer(unsigned short port, size_t threadNum)
 									 {
 										 LOG_ERROR("DisConnect logout fail error!");
 									 }
-									 conn->CloseConnection();
-								 });
+									 conn->CloseConnection(); });
 	m_handleProtocolRequest = std::bind(&ChatServer::HandleProtocolRequest, this, std::placeholders::_1, std::placeholders::_2);
 }
 
@@ -54,7 +53,7 @@ void ChatServer::SetHandleProtocolRequest(HandleProtocolRequestCallback handlePr
 void ChatServer::OnProtocolRequest(const Connection::Ptr &connection, std::size_t length)
 {
 	auto &buffer = connection->GetReadBuf();
-	auto protocolRequests = ProtocolCodec::Instance().UnPackProtocolRequest(buffer);
+	auto protocolRequests = ProtocolCodec::Instance().UnPackProtocolRequest(buffer, length);
 	for (const auto &protocolRequest : protocolRequests)
 	{
 		m_handleProtocolRequest(connection, protocolRequest);

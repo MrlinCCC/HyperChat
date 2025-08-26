@@ -13,8 +13,8 @@
 struct Host
 {
     std::string hostName;
-    std::string port;
-    Host(const std::string &h, const std::string &p)
+    unsigned short port;
+    Host(const std::string &h, unsigned short p)
         : hostName(h), port(p)
     {
     }

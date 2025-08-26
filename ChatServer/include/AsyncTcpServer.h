@@ -32,7 +32,6 @@ private:
 	std::unordered_map<uint32_t, Connection::Ptr> m_connections;
 	std::mutex m_connsMtx;
 	std::atomic<bool> m_isRunning;
-	BinarySemaphore m_allAsyncFinish;
 
 	Connection::MessageCallback m_onMessage;
 	Connection::DisConnectCallback m_disConnect;
