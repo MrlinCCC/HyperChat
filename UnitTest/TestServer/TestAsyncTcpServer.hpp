@@ -9,7 +9,7 @@ TEST(TestAsyncTcpServer, AcceptsConnection)
 	constexpr unsigned short testPort = 15000;
 	AsyncTcpServer server(testPort);
 	std::thread serverThread([&]()
-		{ server.Run(); });
+							 { server.Run(); });
 
 	std::this_thread::sleep_for(std::chrono::seconds(1));
 
@@ -24,7 +24,7 @@ TEST(TestAsyncTcpServer, AcceptsConnection)
 		{
 			socket->connect(tcp::endpoint(asio::ip::make_address("127.0.0.1"), testPort));
 		}
-		catch (const std::system_error& e)
+		catch (const std::system_error &e)
 		{
 			std::cout << "System error: " << e.what() << " Error code: " << e.code() << std::endl;
 			throw;
@@ -34,7 +34,7 @@ TEST(TestAsyncTcpServer, AcceptsConnection)
 
 	std::this_thread::sleep_for(std::chrono::seconds(1));
 	EXPECT_EQ(server.GetConnectionCount(), 10);
-	for (auto& socket : sockets)
+	for (auto &socket : sockets)
 	{
 		if (socket->is_open())
 		{
@@ -50,10 +50,11 @@ TEST(TestAsyncTcpServer, ReceivesAndRespondsCorrectly)
 	constexpr unsigned short testPort = 15001;
 	AsyncTcpServer server(testPort);
 	int serverAcceptMsgCount = 0;
-	server.SetOnMessage([&](const Connection::Ptr& connection, size_t length) {
-		static std::vector<char> buffer;
-		auto& data = connection->GetReadBuf();
-		buffer.insert(buffer.end(), data.begin(), data.begin() + length);
+	server.SetOnMessage([&](const Connection::Ptr &connection, size_t length)
+						{
+		static std::string buffer;
+		const auto& data = connection->GetReadBuf();
+		buffer.append(data, length);
 		while (buffer.size() >= sizeof(uint32_t))
 		{
 			uint32_t messageLength = *reinterpret_cast<const uint32_t*>(buffer.data());
@@ -73,25 +74,23 @@ TEST(TestAsyncTcpServer, ReceivesAndRespondsCorrectly)
 			{
 				break;
 			}
-		}
-		});
+		} });
 
 	std::thread serverThread([&]()
-		{ server.Run(); });
+							 { server.Run(); });
 	std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
 	asio::io_context io_context;
 	auto lockGuard = asio::make_work_guard(io_context);
 	tcp::socket socket(io_context);
-	socket.connect(tcp::endpoint(asio::ip::make_address("127.0.0.1"), testPort));
-
 	auto p_connection = std::make_shared<Connection>(std::move(socket));
+	p_connection->Connect("127.0.0.1", testPort);
 	int clientAcceptMsgCount = 0;
 
 	p_connection->SetMessageCallback([&](std::shared_ptr<Connection> connection, size_t length)
-		{
+									 {
 			static std::vector<char> buffer;
-			char* data = connection->GetReadBuf().data();
+			const char* data = connection->GetReadBuf();
 			buffer.insert(buffer.end(), data, data + length);
 
 			while (buffer.size() >= sizeof(uint32_t))
@@ -109,13 +108,12 @@ TEST(TestAsyncTcpServer, ReceivesAndRespondsCorrectly)
 				{
 					break;
 				}
-			}
-		});
+			} });
 
 	p_connection->AsyncReadMessage();
 
 	std::thread clientThread([&]()
-		{ io_context.run(); });
+							 { io_context.run(); });
 
 	int sendNum = 10;
 
@@ -123,7 +121,7 @@ TEST(TestAsyncTcpServer, ReceivesAndRespondsCorrectly)
 	{
 		std::string message = "Hello " + std::to_string(i);
 		uint32_t len = static_cast<uint32_t>(message.size());
-		std::string buffer(reinterpret_cast<const char*>(&len), sizeof(len));
+		std::string buffer(reinterpret_cast<const char *>(&len), sizeof(len));
 		buffer += message;
 		p_connection->AsyncWriteMessage(buffer);
 	}

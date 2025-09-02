@@ -13,7 +13,7 @@ constexpr int epoch = 100000;
 static std::once_flag init_flag;
 static void InitializeLogger()
 {
-    Logger &logger = Logger::getInstance();
+    Logger &logger = Logger::Instance();
     logger.SetLogLevel(INFO);
     std::filesystem::path logFile =
         std::filesystem::path(PROJECT_LOG_ROOT) / "BM_LogBenchmark_thread.log";

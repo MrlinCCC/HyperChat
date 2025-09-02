@@ -5,7 +5,7 @@
 
 TEST(TestLog, ConsoleLogTest)
 {
-    Logger &logger = Logger::getInstance();
+    Logger &logger = Logger::Instance();
     logger.SetConsoleWriter();
     std::streambuf *oldCoutStreamBuf = std::cout.rdbuf();
     std::stringstream ss;
@@ -72,7 +72,7 @@ TEST(TestLog, ConsoleLogTest)
 
 TEST(TestLog, FileLogTest)
 {
-    Logger &logger = Logger::getInstance();
+    Logger &logger = Logger::Instance();
     std::filesystem::path logFile = std::filesystem::path(PROJECT_LOG_ROOT) / "TestLog_FileLogTest.log";
     if (std::filesystem::exists(logFile))
         std::filesystem::remove(logFile);
@@ -141,7 +141,7 @@ TEST(TestLog, FileLogTest)
 
 TEST(TestLog, FormatLogTest)
 {
-    Logger &logger = Logger::getInstance();
+    Logger &logger = Logger::Instance();
     std::filesystem::path logFile = std::filesystem::path(PROJECT_LOG_ROOT) / "TestLog_FormatLogTest.log";
     if (std::filesystem::exists(logFile))
         std::filesystem::remove(logFile);

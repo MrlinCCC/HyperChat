@@ -120,25 +120,42 @@ public:
 	TestCustomSerializeClass() : id(0), name("") {}
 	TestCustomSerializeClass(int id, const std::string &name) : id(id), name(name) {}
 
-	std::string Serialize() const
+	std::vector<char> Serialize() const
 	{
-		return std::to_string(id) + "|" + name;
+		std::string s = std::to_string(id) + "|" + name;
+		return std::vector<char>(s.begin(), s.end());
 	}
 
-	size_t DeSerialize(const std::string &value)
+	void DeSerialize(const std::vector<char> &buf, size_t offset)
 	{
+		std::string value(buf.data() + offset, buf.size() - offset);
+
 		size_t sep = value.find('|');
 		if (sep == std::string::npos)
 		{
 			throw std::invalid_argument("Invalid format: missing separator");
 		}
-		id = std::stoi(value.substr(0, sep));
+
+		try
+		{
+			id = std::stoi(value.substr(0, sep));
+		}
+		catch (...)
+		{
+			throw std::invalid_argument("Invalid id format");
+		}
+
+		if (sep + 1 >= value.size())
+		{
+			throw std::invalid_argument("Invalid format: missing name");
+		}
 		name = value.substr(sep + 1);
-		return value.size();
 	}
 
 	auto Tie()
 	{
+		id += 1;
+		name += "123";
 		return std::tie(id, name);
 	}
 

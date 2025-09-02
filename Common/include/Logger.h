@@ -13,7 +13,7 @@
 #include "Timestamp.h"
 #include "Semaphore.h"
 #include "SpinLock.h"
-#include "UncopybleAndUnmovable.h"
+#include "Singleton.h"
 
 enum LogLevel
 {
@@ -88,13 +88,13 @@ private:
     std::ofstream m_ofs;
 };
 
-#define CHUNKSIZE (1024 * 256)
-#define BUFFERSIZE 64
-#define TIMEOUT 1
+constexpr int ChunkSize = (1024 * 256);
+constexpr int BufferSize = 64;
+constexpr int Timeout = 1;
 
 struct Chunk
 {
-    explicit Chunk(size_t chunkSize = CHUNKSIZE);
+    explicit Chunk(size_t chunkSize = ChunkSize);
     Chunk(const Chunk &other);
     Chunk &operator=(const Chunk &other);
     ~Chunk();
@@ -112,7 +112,7 @@ struct Chunk
 class RingChunkBuffer
 {
 public:
-    explicit RingChunkBuffer(size_t bufferSize = BUFFERSIZE, size_t msTimeout = TIMEOUT);
+    explicit RingChunkBuffer(size_t bufferSize = BufferSize, size_t msTimeout = Timeout);
 
     void Produce(const std::string &logLine);
     std::string Consume();
@@ -130,11 +130,11 @@ private:
     std::chrono::seconds m_consumeTimeout;
 };
 
-class Logger : public UncopybleAndUnmovable
+class Logger : public Singleton<Logger>
 {
-public:
-    static Logger &getInstance();
+    friend class Singleton<Logger>;
 
+public:
     void SetLogLevel(LogLevel level);
     void SetConsoleWriter();
     void SetFileWriter(const std::string &file);
@@ -145,7 +145,6 @@ public:
 private:
     Logger();
     ~Logger();
-
     void ProcessLog();
 
     LogLevel m_level;
@@ -158,12 +157,12 @@ private:
 #define FORMAT_LOGMESSAGE(fmt, ...) FormatLogMessage(fmt, ##__VA_ARGS__)
 #define FORMAT_LOGLINE(fmtted, level) \
     fmt::format("[{}] [{}] [{}:{}]:{}\n", Timestamp::Now().ToString(), LogLevelToString(level), __FUNCTION__, __LINE__, fmtted)
-#define LOG_BASE(msg, level) Logger::getInstance().WriteMessage(msg, level)
-#define LOG_DEBUG(fmt, ...) Logger::getInstance().WriteMessage(FORMAT_LOGLINE(FORMAT_LOGMESSAGE(fmt, ##__VA_ARGS__), DEBUG), DEBUG)
-#define LOG_INFO(fmt, ...) Logger::getInstance().WriteMessage(FORMAT_LOGLINE(FORMAT_LOGMESSAGE(fmt, ##__VA_ARGS__), INFO), INFO)
-#define LOG_WARN(fmt, ...) Logger::getInstance().WriteMessage(FORMAT_LOGLINE(FORMAT_LOGMESSAGE(fmt, ##__VA_ARGS__), WARN), WARN)
-#define LOG_ERROR(fmt, ...) Logger::getInstance().WriteMessage(FORMAT_LOGLINE(FORMAT_LOGMESSAGE(fmt, ##__VA_ARGS__), ERR), ERR)
-#define SET_Console() Logger::getInstance().SetConsoleWriter()
-#define SET_LOGFILE(file) Logger::getInstance().SetFileWriter(file)
-#define SET_LOGLEVEL(level) Logger::getInstance().SetLogLevel(level)
-#define LOG_FLUSH() Logger::getInstance().LogFlush()
+#define LOG_BASE(msg, level) Logger::Instance().WriteMessage(msg, level)
+#define LOG_DEBUG(fmt, ...) Logger::Instance().WriteMessage(FORMAT_LOGLINE(FORMAT_LOGMESSAGE(fmt, ##__VA_ARGS__), DEBUG), DEBUG)
+#define LOG_INFO(fmt, ...) Logger::Instance().WriteMessage(FORMAT_LOGLINE(FORMAT_LOGMESSAGE(fmt, ##__VA_ARGS__), INFO), INFO)
+#define LOG_WARN(fmt, ...) Logger::Instance().WriteMessage(FORMAT_LOGLINE(FORMAT_LOGMESSAGE(fmt, ##__VA_ARGS__), WARN), WARN)
+#define LOG_ERROR(fmt, ...) Logger::Instance().WriteMessage(FORMAT_LOGLINE(FORMAT_LOGMESSAGE(fmt, ##__VA_ARGS__), ERR), ERR)
+#define SET_Console() Logger::Instance().SetConsoleWriter()
+#define SET_LOGFILE(file) Logger::Instance().SetFileWriter(file)
+#define SET_LOGLEVEL(level) Logger::Instance().SetLogLevel(level)
+#define LOG_FLUSH() Logger::Instance().LogFlush()

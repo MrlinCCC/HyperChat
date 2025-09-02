@@ -155,8 +155,8 @@ SerializedSize(const Cls &obj)
 template <typename T>
 inline std::enable_if_t<std::is_unsigned_v<T>, void> SerializeVariant(T data, std::vector<char> &out)
 {
-	while (data >= 0x80)
-	{ // 128
+	while (data >= 0x80) // 128
+	{
 		out.push_back(static_cast<char>((data & 0x7F) | 0x80));
 		data >>= 7;
 	}
@@ -255,43 +255,6 @@ public:
 		try
 		{
 			std::vector<char> buffer(value.begin(), value.end());
-			T data;
-			size_t size = 0;
-			DeSerializeImp(data, buffer, size);
-			return data;
-		}
-		catch (const std::exception &e)
-		{
-			throw std::runtime_error("DeSerializeImp failed: " + std::string(e.what()));
-		}
-	}
-
-	template <typename T>
-	static std::vector<char> SerializeRaw(const T &value)
-	{
-		try
-		{
-			std::vector<char> buffer;
-			size_t initSize = SerializedSize(value);
-			buffer.reserve(initSize);
-			SerializeImp(value, buffer);
-			return buffer;
-		}
-		catch (const std::exception &e)
-		{
-			throw std::runtime_error("SerializeImp failed: " + std::string(e.what()));
-		}
-	}
-
-	template <typename T>
-	static T DeSerializeRaw(const std::vector<char> &buffer)
-	{
-		if (buffer.empty())
-		{
-			throw std::runtime_error("DeSerialize called with empty string.");
-		}
-		try
-		{
 			T data;
 			size_t size = 0;
 			DeSerializeImp(data, buffer, size);

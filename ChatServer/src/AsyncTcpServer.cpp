@@ -36,11 +36,14 @@ void AsyncTcpServer::Shutdown()
 			m_acceptor.cancel();
 			m_acceptor.close();
 		}
-		std::lock_guard<std::mutex> lock(m_connsMtx);
-		for (auto &[id, connection] : m_connections)
+		std::vector<Connection::Ptr> conns;
 		{
-			connection->CloseConnection();
+			std::lock_guard<std::mutex> lock(m_connsMtx);
+			for (auto &[id, conn] : m_connections)
+				conns.push_back(conn);
 		}
+		for (auto &conn : conns)
+			conn->CloseConnection();
 		m_rwContextPool.Shutdown();
 		m_workGuard.reset();
 		LOG_INFO("TcpServer shutdown!");
@@ -72,49 +75,36 @@ void AsyncTcpServer::AsyncAcceptConnection()
 
 			auto newConnPtr = std::make_shared<Connection>(std::move(newSocket));
 			newConnPtr->SetState(ConnectionState::CONNECTED);
-			if (m_onMessage)
-				newConnPtr->SetMessageCallback(m_onMessage);
-			if (m_disConnect)
-				newConnPtr->SetDisConnectCallback(m_disConnect);
-			{
-				std::lock_guard<std::mutex> lock(m_connsMtx);
-				m_connections.insert(std::make_pair(newConnPtr->GetConnId(), newConnPtr));
-			}
+			HandleConnection(newConnPtr);
+			if (m_onMessage) newConnPtr->SetMessageCallback(m_onMessage);
+			newConnPtr->SetCloseCallback(std::bind(&AsyncTcpServer::HandleCloseConnection, this, newConnPtr));
+			if (m_onError) newConnPtr->SetErrorCallback(m_onError);
+			newConnPtr->SetState(ConnectionState::CONNECTED);
 			newConnPtr->AsyncReadMessage();
 			auto remote = newConnPtr->GetSocket().remote_endpoint();
 			LOG_INFO("Accepted new connection: remote={}:{}",remote.address().to_string().c_str(),remote.port());
 			AsyncAcceptConnection(); });
 }
 
-void AsyncTcpServer::DisConnect(const Connection::Ptr &conn)
+void AsyncTcpServer::HandleConnection(const Connection::Ptr &conn)
 {
-	std::lock_guard<std::mutex> lock(m_connsMtx);
-	if (m_connections.find(conn->GetConnId()) != m_connections.end())
 	{
-		m_connections.erase(conn->GetConnId());
+		std::lock_guard<std::mutex> lock(m_connsMtx);
+		m_connections.insert(std::make_pair(conn->GetConnId(), conn));
 	}
-	if (m_disConnect)
-		m_disConnect(conn);
+	if (m_onConnection)
+		m_onConnection(conn);
 }
 
-size_t AsyncTcpServer::GetConnectionCount()
+void AsyncTcpServer::HandleCloseConnection(const Connection::Ptr &conn)
 {
-	std::lock_guard<std::mutex> lock(m_connsMtx);
-	return m_connections.size();
-}
-
-void AsyncTcpServer::SetOnMessage(Connection::MessageCallback onMessage)
-{
-	if (onMessage)
 	{
-		m_onMessage = onMessage;
+		std::lock_guard<std::mutex> lock(m_connsMtx);
+		if (m_connections.find(conn->GetConnId()) != m_connections.end())
+		{
+			m_connections.erase(conn->GetConnId());
+		}
 	}
-}
-
-void AsyncTcpServer::SetDisConnection(Connection::DisConnectCallback disConnect)
-{
-	if (disConnect)
-	{
-		m_disConnect = disConnect;
-	}
+	if (m_onCloseConnection)
+		m_onCloseConnection(conn);
 }

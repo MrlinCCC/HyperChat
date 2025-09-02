@@ -6,18 +6,11 @@ ChatServer::ChatServer(unsigned short port, size_t threadNum)
 	  m_servicePool(threadNum),
 	  m_isRunning(false)
 {
-	auto onProtocolMessage = std::bind(&ChatServer::OnProtocolRequest, this, std::placeholders::_1, std::placeholders::_2);
-	m_tcpServer.SetOnMessage(onProtocolMessage);
-	m_tcpServer.SetDisConnection([](Connection::Ptr conn)
-								 {
-									 Status status;
-									 ChatService::GetInstance().LogoutHandler(conn, UserIdRequest{conn->GetUserId()}, status);
-									 if (status != SUCCESS)
-									 {
-										 LOG_ERROR("DisConnect logout fail error!");
-									 }
-									 conn->CloseConnection(); });
-	m_handleProtocolRequest = std::bind(&ChatServer::HandleProtocolRequest, this, std::placeholders::_1, std::placeholders::_2);
+	auto onConnection = std::bind(&ChatServer::HandleConnection, this, std::placeholders::_1);
+	m_tcpServer.SetOnConnection(onConnection);
+	auto onCloseConnection = std::bind(&ChatServer::HandleCloseConnection, this, std::placeholders::_1);
+	m_tcpServer.SetOnCloseConnection(onCloseConnection);
+	m_handleProtocolFrame = std::bind(&ChatServer::HandleProtocolFrame, this, std::placeholders::_1, std::placeholders::_2);
 }
 
 ChatServer::~ChatServer()
@@ -42,35 +35,99 @@ void ChatServer::Shutdown()
 	}
 }
 
-void ChatServer::SetHandleProtocolRequest(HandleProtocolRequestCallback handleProtocolRequest)
+void ChatServer::HandleConnection(const Connection::Ptr &conn)
 {
-	if (handleProtocolRequest)
+	auto newSession = std::make_shared<Session>(conn);
+	auto onMessage = std::bind(&Session::HandleMessage, newSession, std::placeholders::_1, std::placeholders::_2);
+	conn->SetMessageCallback(onMessage);
+	newSession->SetProtocolHandler(m_handleProtocolFrame);
+	auto onCloseSession = std::bind(&ChatServer::HandleCloseSession, this, std::placeholders::_1);
+	newSession->SetOnCloseSession(onCloseSession);
+	newSession->SetState(SessionState::ACTIVE);
 	{
-		m_handleProtocolRequest = handleProtocolRequest;
+		std::lock_guard<std::mutex> lock(m_sessionMtx);
+		m_sessionMap.insert(std::make_pair(newSession->GetSessionId(), newSession));
+	}
+	{
+		std::lock_guard<std::mutex> lock(m_connIdSessionMtx);
+		m_connIdToSession.insert(std::make_pair(conn->GetConnId(), newSession));
 	}
 }
 
-void ChatServer::OnProtocolRequest(const Connection::Ptr &connection, std::size_t length)
+void ChatServer::HandleCloseConnection(const Connection::Ptr &conn)
 {
-	auto &buffer = connection->GetReadBuf();
-	auto protocolRequests = ProtocolCodec::Instance().UnPackProtocolRequest(buffer, length);
-	for (const auto &protocolRequest : protocolRequests)
+	std::shared_ptr<Session> session;
 	{
-		m_handleProtocolRequest(connection, protocolRequest);
+		std::lock_guard<std::mutex> lock(m_connIdSessionMtx);
+		auto it = m_connIdToSession.find(conn->GetConnId());
+		if (it != m_connIdToSession.end())
+		{
+			session = it->second.lock();
+			m_connIdToSession.erase(it);
+		}
+	}
+	if (session)
+	{
+		{
+			std::lock_guard<std::mutex> lock(m_sessionMtx);
+			auto it = m_sessionMap.find(session->GetSessionId());
+			if (it != m_sessionMap.end())
+			{
+				m_sessionMap.erase(it);
+			}
+		}
+		// 被动关闭session
+		session->HandleOnCloseSession(conn);
 	}
 }
 
-void ChatServer::HandleProtocolRequest(const Connection::Ptr &connection, const ProtocolRequest::Ptr &req)
+void ChatServer::HandleProtocolFrame(const Session::Ptr &session, const ProtocolFrame::Ptr &frame)
 {
-	auto conn = connection->shared_from_this();
 	if (m_isRunning)
 	{
 		m_servicePool.SubmitTask(
-			[this](std::shared_ptr<Connection> connection, ProtocolRequest::Ptr req)
+			[this](Session::Ptr sess, ProtocolFrame::Ptr frm)
 			{
-				ProtocolResponse::Ptr protocolResponse = ChatService::GetInstance().DispatchService(connection, req);
-				connection->AsyncWriteMessage(ProtocolCodec::Instance().PackProtocolResponse(protocolResponse));
+				try
+				{
+					switch (frm->m_header.m_type)
+					{
+					case FrameType::PING:
+
+						break;
+
+					case FrameType::REQUEST:
+					{
+						auto protocolResponse = ChatService::Instance().DispatchService(sess, frm);
+						sess->SendFrame(protocolResponse);
+						break;
+					}
+
+					case FrameType::PUSH_ACK:
+						break;
+
+					default:
+						LOG_WARN("Unknown frame type {} from session {}", static_cast<uint8_t>(frm->m_header.m_type), sess->GetSessionId());
+						break;
+					}
+				}
+				catch (const std::exception &e)
+				{
+					LOG_ERROR("Exception handling frame for session {}: {}", sess->GetSessionId(), e.what());
+				}
 			},
-			conn, req);
+			session, frame);
 	}
+}
+
+void ChatServer::HandleCloseSession(const std::shared_ptr<Session> &session)
+{
+	AuthState state = session->GetAuthState();
+	uint32_t userId = session->GetUserId();
+	if (state == AuthState::ANONYMOUS || userId <= 0)
+		return;
+	auto &service = ChatService::Instance();
+	service.RemoveUserSession(userId);
+	service.RemoveUser(userId);
+	// todo OnUserOffline
 }

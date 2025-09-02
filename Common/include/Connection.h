@@ -3,7 +3,10 @@
 #include "Logger.h"
 #include <queue>
 #include <asio.hpp>
-#define CONNECTION_BUFFER_SIZE 1024
+#include "Protocol.h"
+
+constexpr const size_t ConnectionBufferSize = 1024;
+constexpr const size_t DelayCloseTimeout = 1;
 
 enum class ConnectionState
 {
@@ -13,20 +16,23 @@ enum class ConnectionState
 	CLOSED
 };
 
-class Connection : public std::enable_shared_from_this<Connection>, public UncopybleAndUnmovable
+class Connection : public std::enable_shared_from_this<Connection>
 {
 public:
 	using Ptr = std::shared_ptr<Connection>;
 	using MessageCallback = std::function<void(const Connection::Ptr &, std::size_t)>;
-	using DisConnectCallback = std::function<void(const Connection::Ptr &)>;
+	using CloseCallback = std::function<void(const Connection::Ptr &)>;
+	using ErrorCallback = std::function<void(const Connection::Ptr &)>;
 
 	Connection(asio::ip::tcp::socket &&socket);
 	void AsyncReadMessage();
 	void AsyncWriteMessage(const std::string &message);
+	// 阻塞连接
 	bool Connect(asio::ip::tcp::resolver::results_type endpoint);
 	bool Connect(const std::string &host, uint16_t port);
+
 	void CloseConnection(); // 主动断开
-	inline ConnectionState GetState(ConnectionState state)
+	inline ConnectionState GetState() const
 	{
 		return m_state;
 	}
@@ -38,9 +44,13 @@ public:
 	{
 		m_onMessage = onMessage;
 	}
-	inline void SetDisConnectCallback(const DisConnectCallback &disConnect) // 被动断开
+	inline void SetCloseCallback(const CloseCallback &onClose)
 	{
-		m_disConnect = disConnect;
+		m_onClose = onClose;
+	}
+	inline void SetErrorCallback(const ErrorCallback &onError)
+	{
+		m_onError = onError;
 	}
 	inline const asio::ip::tcp::socket &GetSocket() const
 	{
@@ -50,15 +60,7 @@ public:
 	{
 		return m_connId;
 	}
-	inline void SetUserId(uint32_t id)
-	{ // 绑定登录用户Id
-		m_userId = id;
-	}
-	inline uint32_t GetUserId() const
-	{
-		return m_userId;
-	}
-	inline std::vector<char> &GetReadBuf()
+	inline const char *GetReadBuf() const
 	{ // 用于协议解析
 		return m_readBuf;
 	}
@@ -70,17 +72,18 @@ public:
 
 private:
 	void AsyncWriteNextMessage();
+	void HandleOnCloseConnection(); // 被动断开回调
 
 	uint32_t m_connId;
-	uint32_t m_userId;
 	asio::ip::tcp::socket m_socket;
-	std::vector<char> m_readBuf;
+	char m_readBuf[ConnectionBufferSize];
 	std::queue<std::string> m_sendQueue;
 	std::mutex m_sendQueMtx;
 	std::condition_variable m_sendQueCV;
 
 	MessageCallback m_onMessage;
-	DisConnectCallback m_disConnect;
+	CloseCallback m_onClose;
+	ErrorCallback m_onError;
 
-	ConnectionState m_state;
+	std::atomic<ConnectionState> m_state{ConnectionState::DISCONNECTED};
 };

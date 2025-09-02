@@ -1,9 +1,8 @@
 #include "Connection.h"
 #include "Utils.hpp"
 
-Connection::Connection(asio::ip::tcp::socket &&socket) : m_socket(std::move(socket)), m_userId(0), m_state(ConnectionState::DISCONNECTED)
+Connection::Connection(asio::ip::tcp::socket &&socket) : m_socket(std::move(socket))
 {
-	m_readBuf.resize(CONNECTION_BUFFER_SIZE);
 	m_connId = GenerateAutoIncrementId<Connection>();
 }
 
@@ -15,45 +14,39 @@ Connection::~Connection()
 
 void Connection::AsyncReadMessage()
 {
-	if (m_state == ConnectionState::CLOSING || m_state == ConnectionState::CLOSED)
+	if (m_state != ConnectionState::CONNECTED) // 连接开始关闭后不再继续注册异步读
 	{
-		LOG_WARN("Attempting to read from a closed or closing connection.");
+		LOG_WARN("Attempting to read from a disconnected, closing or closed connection.");
 		return;
 	}
 	auto self = shared_from_this();
-	m_readBuf.resize(CONNECTION_BUFFER_SIZE);
 	m_socket.async_read_some(asio::buffer(m_readBuf), [self](std::error_code ec, std::size_t length)
 							 {
-			if (ec == asio::error::operation_aborted) { //主动关闭
+			if (ec == asio::error::operation_aborted) //主动关闭后清理已注册的异步读时触发
 				return;
-			}	
-			if (ec == asio::error::eof || ec == asio::error::connection_reset) { //被动关闭
-				if (self->m_disConnect) self->m_disConnect(self);
+			if (ec == asio::error::eof || ec == asio::error::connection_reset) { //对方关闭时触发
+				self->HandleOnCloseConnection();
 				return;
 			}
 			if (ec)
 			{
 				LOG_ERROR(ec.message());
+				if(self->m_onError) self->m_onError(self);
 				self->CloseConnection();
 				return;
 			}
-			if (self->m_onMessage) {
-				self->m_onMessage(self, length);
-			}
-			else
-				LOG_WARN("OnMessage Callback is nullptr!");
+			if (self->m_onMessage) self->m_onMessage(self,length);
 
 			self->AsyncReadMessage(); });
 }
 
 void Connection::AsyncWriteMessage(const std::string &message)
 {
-	if (m_state == ConnectionState::CLOSING || m_state == ConnectionState::CLOSED)
+	if (m_state != ConnectionState::CONNECTED)
 	{
-		LOG_WARN("Attempting to write to a closed or closing connection.");
+		LOG_WARN("Attempting to read from a disconnected, closing or closed connection.");
 		return;
 	}
-
 	bool write_in_progress;
 	{
 		std::lock_guard<std::mutex> lock(m_sendQueMtx);
@@ -78,12 +71,13 @@ void Connection::AsyncWriteNextMessage()
 				return;
 			}
 			if (ec == asio::error::connection_reset) {
-				if (self->m_disConnect) self->m_disConnect(self);
+				self->HandleOnCloseConnection();
 				return;
 			}
 			if (ec)
 			{
 				LOG_ERROR(ec.message());
+				if(self->m_onError) self->m_onError(self);
 				self->CloseConnection();
 				return;
 			}
@@ -118,7 +112,6 @@ bool Connection::Connect(asio::ip::tcp::resolver::results_type endpoint)
 
 bool Connection::Connect(const std::string &host, uint16_t port)
 {
-
 	asio::error_code ec;
 	asio::ip::tcp::endpoint endpoint(asio::ip::make_address(host), port);
 	m_socket.connect(endpoint, ec);
@@ -133,20 +126,62 @@ bool Connection::Connect(const std::string &host, uint16_t port)
 
 void Connection::CloseConnection()
 {
-	if (m_state == ConnectionState::CLOSING || m_state == ConnectionState::CLOSED)
+
+	ConnectionState expected = ConnectionState::CONNECTED;
+	if (!m_state.compare_exchange_strong(expected, ConnectionState::CLOSING))
 	{
 		LOG_WARN("Connection is already closing or closed.");
 		return;
 	}
-
-	m_state = ConnectionState::CLOSING;
-	std::unique_lock<std::mutex> lock(m_sendQueMtx);
-	m_sendQueCV.wait(lock, [this]()
-					 { return m_sendQueue.empty(); });
+	{
+		std::unique_lock<std::mutex> lock(m_sendQueMtx);
+		if (!m_sendQueCV.wait_for(lock, std::chrono::seconds(DelayCloseTimeout),
+								  [this]
+								  { return m_sendQueue.empty(); }))
+		{
+			LOG_WARN("Send queue not empty, force closing.");
+		}
+	}
 	if (m_socket.is_open())
 	{
 		m_socket.cancel();
 		m_socket.close();
 	}
+
+	if (m_onClose)
+		m_onClose(shared_from_this());
+
+	m_state = ConnectionState::CLOSED;
+}
+
+void Connection::HandleOnCloseConnection()
+{
+	ConnectionState expected = ConnectionState::CONNECTED;
+	if (!m_state.compare_exchange_strong(expected, ConnectionState::CLOSING))
+	{
+		LOG_WARN("Connection is already closing or closed.");
+		return;
+	}
+	if (m_socket.is_open())
+	{
+		m_socket.cancel();
+	}
+	std::fill(std::begin(m_readBuf), std::end(m_readBuf), 0); // clear
+	{
+		std::lock_guard<std::mutex> lock(m_sendQueMtx);
+		while (!m_sendQueue.empty())
+		{
+			m_sendQueue.pop(); // drop
+		}
+	}
+	if (m_socket.is_open())
+	{
+		m_socket.close();
+	}
+
+	auto self = shared_from_this();
+	if (m_onClose)
+		m_onClose(self);
+
 	m_state = ConnectionState::CLOSED;
 }

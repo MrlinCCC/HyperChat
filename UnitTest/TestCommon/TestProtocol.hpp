@@ -1,92 +1,104 @@
 #include <gtest/gtest.h>
 #include "Protocol.h"
 
-TEST(ProtocolCodecTest, RequestPackUnpackRoundTrip)
+TEST(ProtocolCodecTest, RequestPackUnpack)
 {
-    auto req = std::make_shared<ProtocolRequest>();
-    req->m_requestId = 12345;
-    req->m_method = "GetUser";
+    auto req = std::make_shared<ProtocolFrame>();
+    req->m_header.m_requestId = 12345;
+    req->m_header.m_method = MethodType::LOGIN;
+    req->m_header.m_type = FrameType::REQUEST;
     req->m_payload = "user=alice";
 
-    std::string packed = ProtocolCodec::Instance().PackProtocolRequest(req);
+    ProtocolCodec codec;
+    std::string packed = codec.PackProtocolFrame(req);
 
-    std::vector<char> buffer(packed.begin(), packed.end());
+    std::string buffer(packed.begin(), packed.end());
 
-    auto unpacked = ProtocolCodec::Instance().UnPackProtocolRequest(buffer, buffer.size());
+    auto unpacked = codec.UnPackProtocolFrame(buffer.data(), buffer.size());
     ASSERT_EQ(unpacked.size(), 1);
 
     auto req2 = unpacked[0];
-    EXPECT_EQ(req2->m_magic, MAGIC);
-    EXPECT_EQ(req2->m_requestId, req->m_requestId);
-    EXPECT_EQ(req2->m_method, req->m_method);
+    EXPECT_EQ(req2->m_header.m_magic, Magic);
+    EXPECT_EQ(req2->m_header.m_requestId, req->m_header.m_requestId);
+    EXPECT_EQ(req2->m_header.m_method, req->m_header.m_method);
+    EXPECT_EQ(req2->m_header.m_type, FrameType::REQUEST);
     EXPECT_EQ(req2->m_payload, req->m_payload);
 }
 
-TEST(ProtocolCodecTest, ResponsePackUnpackRoundTrip)
+TEST(ProtocolCodecTest, ResponsePackUnpack)
 {
-    auto resp = std::make_shared<ProtocolResponse>();
-    resp->m_requestId = 54321;
-    resp->m_pushType = "Notify";
-    resp->m_status = BAD_REQUEST;
+    auto resp = std::make_shared<ProtocolFrame>();
+    resp->m_header.m_requestId = 54321;
+    resp->m_header.m_method = MethodType::PUSH_MESSAGE;
+    resp->m_header.m_type = FrameType::PUSH;
+    resp->m_header.m_status = Status::BAD_REQUEST;
     resp->m_payload = "ok";
 
-    std::string packed = ProtocolCodec::Instance().PackProtocolResponse(resp);
-    std::vector<char> buffer(packed.begin(), packed.end());
+    ProtocolCodec codec;
+    std::string packed = codec.PackProtocolFrame(resp);
+    std::string buffer(packed.begin(), packed.end());
 
-    auto unpacked = ProtocolCodec::Instance().UnPackProtocolResponse(buffer, buffer.size());
+    auto unpacked = codec.UnPackProtocolFrame(buffer.data(), buffer.size());
     ASSERT_EQ(unpacked.size(), 1);
 
     auto resp2 = unpacked[0];
-    EXPECT_EQ(resp2->m_magic, MAGIC);
-    EXPECT_EQ(resp2->m_requestId, resp->m_requestId);
-    EXPECT_EQ(resp2->m_pushType, resp->m_pushType);
-    EXPECT_EQ(resp2->m_status, resp->m_status);
+    EXPECT_EQ(resp2->m_header.m_magic, Magic);
+    EXPECT_EQ(resp2->m_header.m_requestId, resp->m_header.m_requestId);
+    EXPECT_EQ(resp2->m_header.m_method, resp->m_header.m_method);
+    EXPECT_EQ(resp2->m_header.m_type, resp->m_header.m_type);
+    EXPECT_EQ(resp2->m_header.m_status, resp->m_header.m_status);
     EXPECT_EQ(resp2->m_payload, resp->m_payload);
 }
 
 TEST(ProtocolCodecTest, InvalidFirstMagicThenValidRequest)
 {
-    auto req1 = std::make_shared<ProtocolRequest>();
-    req1->m_requestId = 111;
-    req1->m_method = "Bad";
+    auto req1 = std::make_shared<ProtocolFrame>();
+    req1->m_header.m_magic = 111;
+    req1->m_header.m_method = MethodType::ONE_CHAT;
+    req1->m_header.m_type = FrameType::REQUEST;
     req1->m_payload = "Payload1";
-    std::string packed1 = ProtocolCodec::Instance().PackProtocolRequest(req1);
+    ProtocolCodec codec;
+    std::string packed1 = codec.PackProtocolFrame(req1);
 
-    auto req2 = std::make_shared<ProtocolRequest>();
-    req2->m_requestId = 222;
-    req2->m_method = "Good";
+    auto req2 = std::make_shared<ProtocolFrame>();
+    req2->m_header.m_requestId = 222;
+    req2->m_header.m_method = MethodType::GROUP_CHAT;
+    req1->m_header.m_type = FrameType::REQUEST;
     req2->m_payload = "Payload2";
-    std::string packed2 = ProtocolCodec::Instance().PackProtocolRequest(req2);
-
+    std::string packed2 = codec.PackProtocolFrame(req2);
+    // modify magic
     packed1[0] = 0;
     packed1[1] = 0;
     packed1[2] = 0;
     packed1[3] = 0;
 
     std::string combined = packed1 + packed2;
-    std::vector<char> buffer(combined.begin(), combined.end());
+    std::string buffer(combined.begin(), combined.end());
 
-    auto unpacked = ProtocolCodec::Instance().UnPackProtocolRequest(buffer, buffer.size());
+    auto unpacked = codec.UnPackProtocolFrame(buffer.data(), buffer.size());
 
     ASSERT_EQ(unpacked.size(), 1);
     auto reqOut = unpacked[0];
-    EXPECT_EQ(reqOut->m_requestId, req2->m_requestId);
-    EXPECT_EQ(reqOut->m_method, req2->m_method);
+    EXPECT_EQ(reqOut->m_header.m_requestId, req2->m_header.m_requestId);
+    EXPECT_EQ(reqOut->m_header.m_method, req2->m_header.m_method);
+    EXPECT_EQ(reqOut->m_header.m_type, FrameType::REQUEST);
     EXPECT_EQ(reqOut->m_payload, req2->m_payload);
 }
 
 TEST(ProtocolCodecTest, InvalidChecksumIsRejected)
 {
-    auto resp = std::make_shared<ProtocolResponse>();
-    resp->m_requestId = 99;
-    resp->m_pushType = "Push";
-    resp->m_status = SUCCESS;
+    auto resp = std::make_shared<ProtocolFrame>();
+    resp->m_header.m_requestId = 99;
+    resp->m_header.m_method = MethodType::LOGOUT;
+    resp->m_header.m_type = FrameType::PUSH;
+    resp->m_header.m_status = Status::SUCCESS;
     resp->m_payload = "err";
 
-    std::string packed = ProtocolCodec::Instance().PackProtocolResponse(resp);
+    ProtocolCodec codec;
+    std::string packed = codec.PackProtocolFrame(resp);
     packed[packed.size() - 1] ^= 0xFF;
 
-    std::vector<char> buffer(packed.begin(), packed.end());
-    auto unpacked = ProtocolCodec::Instance().UnPackProtocolResponse(buffer, buffer.size());
+    std::string buffer(packed.begin(), packed.end());
+    auto unpacked = codec.UnPackProtocolFrame(buffer.data(), buffer.size());
     EXPECT_TRUE(unpacked.empty());
 }

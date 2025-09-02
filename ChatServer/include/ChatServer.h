@@ -9,25 +9,36 @@
 #include "AsyncTcpServer.h"
 #include <Protocol.h>
 #include <atomic>
-#include "Globals.hpp"
+#include "Configuration.hpp"
+#include "Session.h"
 
 class ChatServer
 {
 public:
-    using HandleProtocolRequestCallback = std::function<void(const Connection::Ptr &, const ProtocolRequest::Ptr &)>;
+    using HandleProtocolFrameCallback = std::function<void(const Session::Ptr &, const ProtocolFrame::Ptr &)>;
     ChatServer(unsigned short port, size_t threadNum = WORK_THREAD_NUM);
     ~ChatServer();
     void Run();
     void Shutdown();
-    void SetHandleProtocolRequest(HandleProtocolRequestCallback handleProtocolRequest);
+    inline void ChatServer::SetHandleProtocolFrame(HandleProtocolFrameCallback handleProtocolFrame) // test
+    {
+        m_handleProtocolFrame = handleProtocolFrame;
+    }
 
 private:
-    void OnProtocolRequest(const std::shared_ptr<Connection> &connection, std::size_t);
-    void HandleProtocolRequest(const Connection::Ptr &connection, const ProtocolRequest::Ptr &req);
+    void HandleConnection(const Connection::Ptr &conn);
+    void HandleCloseConnection(const Connection::Ptr &conn);
+    void HandleProtocolFrame(const std::shared_ptr<Session> &session, const ProtocolFrame::Ptr &frame);
+    void HandleCloseSession(const std::shared_ptr<Session> &session);
 
     AsyncTcpServer m_tcpServer;
     ThreadPool m_servicePool;
     std::atomic<bool> m_isRunning;
 
-    HandleProtocolRequestCallback m_handleProtocolRequest;
+    HandleProtocolFrameCallback m_handleProtocolFrame;
+
+    std::unordered_map<uint32_t, std::weak_ptr<Session>> m_connIdToSession;
+    std::mutex m_connIdSessionMtx;
+    std::unordered_map<uint32_t, Session::Ptr> m_sessionMap;
+    std::mutex m_sessionMtx;
 };

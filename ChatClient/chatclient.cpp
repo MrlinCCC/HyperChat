@@ -1,11 +1,11 @@
 #include "chatclient.h"
 
 ChatClient::ChatClient(const Host &server)
-    : m_conn(std::make_shared<Connection>(asio::ip::tcp::socket(m_ioContext))),
+    : m_conn(asio::ip::tcp::socket(m_ioContext)),
       m_workGuard(asio::make_work_guard(m_ioContext)), m_serverHost(server), m_isConnected(false)
 {
     auto onResponse = std::bind(&ChatClient::OnResponse, this, std::placeholders::_1, std::placeholders::_2);
-    m_conn->SetMessageCallback(onResponse);
+    m_conn.SetMessageCallback(onResponse);
 }
 
 ChatClient::~ChatClient()
@@ -28,7 +28,7 @@ void ChatClient::ConnectServer()
         return;
     }
     int attempts = 0;
-    while (attempts < MAX_RETRIES && !m_conn->Connect(endpoints))
+    while (attempts < MAX_RETRIES && !m_conn.Connect(endpoints))
     {
         ++attempts;
         LOG_INFO("Connection attempt {} failed. Retrying...", attempts);
@@ -49,11 +49,11 @@ void ChatClient::ConnectServer()
 
 void ChatClient::OnResponse(Connection::Ptr conn, std::size_t length)
 {
-    auto &buffer = m_conn->GetReadBuf();
-    auto protocolResponses = ProtocolCodec::Instance().UnPackProtocolResponse(buffer, length);
+    const auto &buffer = m_conn.GetReadBuf();
+    auto protocolResponses = m_codec.UnPackProtocolFrame(buffer, length);
     for (const auto &protocolResponse : protocolResponses)
     {
-        if (!protocolResponse->m_requestId && !protocolResponse->m_pushType.empty())
+        if (protocolResponse->m_header.m_type == FrameType::PUSH)
         {
             // push type
             LOG_INFO("Push method success!");
@@ -68,7 +68,7 @@ void ChatClient::OnResponse(Connection::Ptr conn, std::size_t length)
 
 void ChatClient::Run()
 {
-    m_conn->AsyncReadMessage();
+    m_conn.AsyncReadMessage();
     m_ioContext.run();
 }
 
@@ -76,18 +76,18 @@ void ChatClient::CloseConnection()
 {
     if (m_isConnected)
     {
-        m_conn->CloseConnection();
+        m_conn.CloseConnection();
     }
 }
 
 void ChatClient::Register(const std::string username, const std::string passwd)
 {
     AuthRequest req{username, passwd};
-    SendRequest<AuthRequest>(req, MethodType::Register);
+    SendRequest<AuthRequest>(req, MethodType::REGISTER);
 }
 
 void ChatClient::Login(const std::string username, const std::string passwd)
 {
     AuthRequest req{username, passwd};
-    SendRequest<AuthRequest>(req, MethodType::Login);
+    SendRequest<AuthRequest>(req, MethodType::LOGIN);
 }

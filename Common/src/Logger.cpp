@@ -187,12 +187,6 @@ Logger::~Logger()
     }
 }
 
-Logger &Logger::getInstance()
-{
-    static Logger logger;
-    return logger;
-}
-
 void Logger::SetLogLevel(LogLevel level)
 {
     m_level = level;

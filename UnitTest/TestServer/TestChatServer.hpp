@@ -7,12 +7,12 @@ protected:
     void SetUp() override
     {
         m_chatServer = std::make_unique<ChatServer>(m_port);
-        m_curRequest = std::make_shared<ProtocolRequest>();
-        m_chatServer->SetHandleProtocolRequest([&](const std::shared_ptr<Connection> &connection, const std::shared_ptr<ProtocolRequest> &request)
-                                               {
+        m_curRequest = std::make_shared<ProtocolFrame>();
+        m_chatServer->SetHandleProtocolFrame([&](const Session::Ptr &session, const std::shared_ptr<ProtocolFrame> &request)
+                                             {
             handleCount++;
-            EXPECT_EQ(request->m_requestId, m_curRequest->m_requestId);
-            EXPECT_EQ(request->m_method, m_curRequest->m_method);
+            EXPECT_EQ(request->m_header.m_requestId, m_curRequest->m_header.m_requestId);
+            EXPECT_EQ(request->m_header.m_method, m_curRequest->m_header.m_method);
             EXPECT_EQ(request->m_payload,m_curRequest->m_payload);
             std::lock_guard<std::mutex> lock(mtx);
             cv.notify_one(); });
@@ -69,8 +69,9 @@ protected:
     std::thread m_ioContextThread;
     std::unique_ptr<asio::io_context> m_ioc;
     std::shared_ptr<Connection> m_connection;
+    ProtocolCodec m_codec;
     std::unique_ptr<asio::executor_work_guard<asio::io_context::executor_type>> m_workGuard;
-    std::shared_ptr<ProtocolRequest> m_curRequest;
+    std::shared_ptr<ProtocolFrame> m_curRequest;
     int handleCount = 0;
     std::mutex mtx;
     std::condition_variable cv;
@@ -78,11 +79,12 @@ protected:
 
 TEST_F(ChatServerTest, NormalMessageReceiveTest)
 {
-    m_curRequest->m_requestId = 12345;
-    m_curRequest->m_method = "TestMethod";
+    m_curRequest->m_header.m_requestId = 12345;
+    m_curRequest->m_header.m_method = MethodType::REGISTER;
+    m_curRequest->m_header.m_type = FrameType::REQUEST;
     m_curRequest->m_payload = "Test Payload";
 
-    std::string packed = ProtocolCodec::Instance().PackProtocolRequest(m_curRequest);
+    std::string packed = m_codec.PackProtocolFrame(m_curRequest);
     m_connection->AsyncWriteMessage(packed);
 
     std::unique_lock<std::mutex> lock(mtx);
@@ -98,11 +100,12 @@ TEST_F(ChatServerTest, LargeMessageTest)
 
     std::string largePayload(4000, 'a');
 
-    m_curRequest->m_requestId = 12345;
-    m_curRequest->m_method = "LargeMessageTest";
+    m_curRequest->m_header.m_requestId = 12345;
+    m_curRequest->m_header.m_method = MethodType::REGISTER;
+    m_curRequest->m_header.m_type = FrameType::REQUEST;
     m_curRequest->m_payload = largePayload;
 
-    std::string packed = ProtocolCodec::Instance().PackProtocolRequest(m_curRequest);
+    std::string packed = m_codec.PackProtocolFrame(m_curRequest);
     m_connection->AsyncWriteMessage(packed);
     std::unique_lock<std::mutex> lock(mtx);
     cv.wait_for(lock, std::chrono::seconds(1), [&]
@@ -114,11 +117,12 @@ TEST_F(ChatServerTest, MessageSplitAcrossMultipleChunks)
 {
     std::string largePayload(1024, 'a');
 
-    m_curRequest->m_requestId = 12345;
-    m_curRequest->m_method = "SplitMessageTest";
+    m_curRequest->m_header.m_requestId = 12345;
+    m_curRequest->m_header.m_method = MethodType::REGISTER;
+    m_curRequest->m_header.m_type = FrameType::REQUEST;
     m_curRequest->m_payload = largePayload;
 
-    std::string packed = ProtocolCodec::Instance().PackProtocolRequest(m_curRequest);
+    std::string packed = m_codec.PackProtocolFrame(m_curRequest);
 
     size_t chunkSize = 256;
     for (size_t i = 0; i < packed.size(); i += chunkSize)

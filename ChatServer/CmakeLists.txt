@@ -4,7 +4,8 @@ add_library(HyperChatServerLib STATIC
     src/IoContextPool.cpp
     src/AsyncTcpServer.cpp
     src/SQLiteConnectionPool.cpp
-    src/SQLExecuser.cpp)
+    src/SQLExecuser.cpp
+    src/Session.cpp)
 
 find_package(SQLiteCpp CONFIG REQUIRED)
 target_include_directories(HyperChatServerLib PUBLIC include)

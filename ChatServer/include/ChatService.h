@@ -1,19 +1,20 @@
 #pragma once
 #include <Protocol.h>
 #include <functional>
-#include <Connection.h>
-#include "UncopybleAndUnmovable.h"
+#include <Session.h>
+#include "Singleton.h"
 #include <Serializer.hpp>
 #include "Dto.hpp"
 #include "SQLExecuser.h"
-#include "Globals.hpp"
+#include "Configuration.hpp"
+#include "Session.h"
 
-class ChatService : public UncopybleAndUnmovable
+class ChatService : public Singleton<ChatService>
 {
-public:
-	using ServiceHandler = std::function<ProtocolResponse::Ptr(const Connection::Ptr &, const ProtocolRequest::Ptr &)>;
+	friend class Singleton<ChatService>;
 
-	static ChatService &GetInstance();
+public:
+	using ServiceHandler = std::function<ProtocolFrame::Ptr(const Session::Ptr &, const ProtocolFrame::Ptr &)>;
 
 	inline const std::shared_ptr<SQLExecuser> &GetSQLExecuser() const
 	{
@@ -21,97 +22,102 @@ public:
 	}
 
 	template <typename Handler, typename RequestType, typename ResponseType>
-	void RegisterServiceHandler(std::string method, Handler &&handler)
+	void RegisterServiceHandler(MethodType method, Handler &&handler)
 	{
-		static_assert(std::is_invocable_r_v<ResponseType, Handler, const Connection::Ptr &, const RequestType &, Status &>,
-					  "Handler must be callable with (Connection::Ptr,RequestType,Status) and return ResponseType");
+		static_assert(std::is_invocable_r_v<ResponseType, Handler, const Session::Ptr &, const RequestType &, Status &>,
+					  "Handler must be callable with (Session::Ptr,RequestType,Status) and return ResponseType");
 		if (m_serviceHandlerMap.find(method) != m_serviceHandlerMap.end())
 		{
 			LOG_WARN("Handler for this MethodType already exists!");
 			return;
 		}
-		auto serviceHandler = std::function<ProtocolResponse::Ptr(const Connection::Ptr &, const ProtocolRequest::Ptr &)>(
-			[handler = std::forward<Handler>(handler)](const Connection::Ptr &conn, const ProtocolRequest::Ptr &message)
+		auto serviceHandler = std::function<ProtocolFrame::Ptr(const Session::Ptr &, const ProtocolFrame::Ptr &)>(
+			[handler = std::forward<Handler>(handler)](const Session::Ptr &session, const ProtocolFrame::Ptr &frame)
 			{
 				RequestType req;
-				ProtocolResponse::Ptr protocolResponse = std::make_shared<ProtocolResponse>();
+				ProtocolFrame::Ptr response = std::make_shared<ProtocolFrame>();
 				try
 				{
-					req = Serializer::DeSerialize<RequestType>(message->m_payload);
+					req = Serializer::DeSerialize<RequestType>(frame->m_payload);
 				}
 				catch (const std::exception &e)
 				{
-					protocolResponse->m_status = BAD_REQUEST;
-					protocolResponse->m_requestId = message->m_requestId;
+					response->m_header.m_status = Status::BAD_REQUEST;
+					response->m_header.m_requestId = frame->m_header.m_requestId;
 					LOG_WARN("DeSerialize error:{}", e.what());
-					return protocolResponse;
+					return response;
 				}
 				Status status;
-				ResponseType response = handler(conn, req, status);
-				protocolResponse->m_status = status;
-				protocolResponse->m_requestId = message->m_requestId;
-				protocolResponse->m_payload = Serializer::Serialize(response);
-				return protocolResponse;
+				ResponseType responseData = handler(session, req, status);
+				response->m_header.m_type = FrameType::RESPONSE;
+				response->m_header.m_status = status;
+				response->m_header.m_requestId = frame->m_header.m_requestId;
+				response->m_payload = Serializer::Serialize(responseData);
+				return response;
 			});
 		m_serviceHandlerMap.insert({method, serviceHandler});
 	}
-	ProtocolResponse::Ptr DispatchService(const std::shared_ptr<Connection> &conn, const ProtocolRequest::Ptr &ProtocolRequest);
+	ProtocolFrame::Ptr DispatchService(const std::shared_ptr<Session> &session, const ProtocolFrame::Ptr &ProtocolFrame);
 
 private:
 	ChatService();
 
+	void RemoveUser(uint32_t userId);
+
+	void RemoveUserSession(uint32_t userId);
+
 	void InitDatabase();
 
-	bool CheckAuth(uint32_t userId, const Connection::Ptr &conn);
+	bool CheckAuth(uint32_t userId, const Session::Ptr &session);
 
 	bool IsUserOnline(uint32_t userId);
 
-	const Connection::Ptr &ChatService::GetUserConnection(uint32_t userId);
+	const Session::Ptr &ChatService::GetUserSession(uint32_t userId);
 
 	template <typename T>
-	void PushOnlineData(const Connection::Ptr &conn, const T &data, const std::string &pushType)
+	void PushOnlineData(const Session::Ptr &session, const T &data, MethodType pushType)
 	{
-		auto response = std::make_shared<ProtocolResponse>();
-		response->m_requestId = 0;
-		response->m_pushType = pushType;
-		response->m_status = SUCCESS;
+		auto response = std::make_shared<ProtocolFrame>();
+		response->m_header.m_requestId = 0;
+		response->m_header.m_type = FrameType::PUSH;
+		response->m_header.m_method = pushType;
+		response->m_header.m_status = Status::SUCCESS;
 		response->m_payload = Serializer::Serialize(data);
-		conn->AsyncWriteMessage(ProtocolCodec::Instance().PackProtocolResponse(response));
+		session->SendFrame(response);
 	}
 
-	StatusResponse RegisterHandler(const Connection::Ptr &conn, const AuthRequest &request, Status &status);
+	StatusResponse RegisterHandler(const Session::Ptr &session, const AuthRequest &request, Status &status);
 
-	AuthResponse LoginHandler(const Connection::Ptr &conn, const AuthRequest &request, Status &status);
+	AuthResponse LoginHandler(const Session::Ptr &session, const AuthRequest &request, Status &status);
 
-	StatusResponse LogoutHandler(const Connection::Ptr &conn, const UserIdRequest &request, Status &status);
+	StatusResponse LogoutHandler(const Session::Ptr &session, const UserIdRequest &request, Status &status);
 
-	ChatRoomResponse CreateChatRoomHandler(const Connection::Ptr &conn, const CreateChatRoomRequest &request, Status &status);
+	ChatRoomResponse CreateChatRoomHandler(const Session::Ptr &session, const CreateChatRoomRequest &request, Status &status);
 
-	ChatRoomInvitationResponse InviteToChatRoomHandler(const Connection::Ptr &conn, const InviteToChatRoomRequest &request, Status &status);
+	ChatRoomInvitationResponse InviteToChatRoomHandler(const Session::Ptr &session, const InviteToChatRoomRequest &request, Status &status);
 
-	ChatRoomResponse AcceptChatRoomtInvitationHandler(const Connection::Ptr &conn, const HandleInvitationRequest &request, Status &status);
+	ChatRoomResponse AcceptChatRoomInvitationHandler(const Session::Ptr &session, const HandleInvitationRequest &request, Status &status);
 
-	StatusResponse RejectChatRoomInvitationHandler(const Connection::Ptr &conn, const HandleInvitationRequest &request, Status &status);
+	StatusResponse RejectChatRoomInvitationHandler(const Session::Ptr &session, const HandleInvitationRequest &request, Status &status);
 
-	MessageResponse OneChatHandler(const Connection::Ptr &conn, const OneChatRequest &request, Status &status);
+	MessageResponse OneChatHandler(const Session::Ptr &session, const OneChatRequest &request, Status &status);
 
-	MessageResponse GroupChatHandler(const Connection::Ptr &conn, const GroupChatRequest &request, Status &status);
+	MessageResponse GroupChatHandler(const Session::Ptr &session, const GroupChatRequest &request, Status &status);
 
-	FriendInvitationResponse AddFriendHandler(const Connection::Ptr &conn, const AddFriendRequest &request, Status &status);
+	FriendInvitationResponse AddFriendHandler(const Session::Ptr &session, const AddFriendRequest &request, Status &status);
 
-	UserResponse AcceptFriendHandler(const Connection::Ptr &conn, const HandleInvitationRequest &request, Status &status);
+	UserResponse AcceptFriendHandler(const Session::Ptr &session, const HandleInvitationRequest &request, Status &status);
 
-	StatusResponse RejectFriendHandler(const Connection::Ptr &conn, const HandleInvitationRequest &request, Status &status);
+	StatusResponse RejectFriendHandler(const Session::Ptr &session, const HandleInvitationRequest &request, Status &status);
 
-	std::unordered_map<std::string, ServiceHandler> m_serviceHandlerMap;
+	std::unordered_map<MethodType, ServiceHandler> m_serviceHandlerMap;
 
 	std::shared_ptr<SQLExecuser> p_sqlExecuser;
 
 	std::unordered_map<uint32_t, User> m_userMap;
-	std::unordered_map<uint32_t, Connection::Ptr> m_userConnMap;
-
+	std::unordered_map<uint32_t, Session::Ptr> m_userIdSessionMap;
 	std::mutex m_userMtx;
-	std::mutex m_userConnMtx;
+	std::mutex m_userIdSessionMtx;
 
 	friend class ChatServer;
 };

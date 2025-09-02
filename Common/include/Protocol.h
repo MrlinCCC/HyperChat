@@ -1,48 +1,17 @@
 #pragma once
 #include <vector>
 #include <memory>
-#include <cstring>
-#include <cstdint>
 #include "Logger.h"
+#include <algorithm>
+#include "Singleton.h"
 
-#define MAGIC 0xA1B2C3D4
+constexpr const size_t ProtocolBufferSize = 1024;
 
-enum Status : uint32_t
+class CRC32 : public Singleton<CRC32>
 {
-	SUCCESS,
-	INTERNAL_ERROR,
-	NOT_FOUND,
-	BAD_REQUEST,
-	UNAUTHORIZED,
-	FORBIDDEN
-};
+	friend class Singleton<CRC32>;
 
-struct ProtocolRequest
-{
-	using Ptr = std::shared_ptr<ProtocolRequest>;
-	uint32_t m_magic = MAGIC;
-	uint32_t m_requestId;
-	std::string m_method;
-	std::string m_payload;
-	uint32_t m_checkSum;
-};
-
-struct ProtocolResponse
-{
-	using Ptr = std::shared_ptr<ProtocolResponse>;
-	uint32_t m_magic = MAGIC;
-	uint32_t m_requestId;
-	std::string m_pushType;
-	Status m_status;
-	std::string m_payload;
-	uint32_t m_checkSum;
-};
-
-class CRC32 : public UncopybleAndUnmovable
-{
 public:
-	static CRC32 &Instance();
-
 	uint32_t CalCheckSum(const char *data, size_t length) const;
 
 private:
@@ -54,18 +23,145 @@ private:
 	const uint32_t m_polynomial = 0x04C11DB7;
 };
 
-class ProtocolCodec : public UncopybleAndUnmovable
+class DynamicRingBuffer
 {
 public:
-	static ProtocolCodec &Instance();
+	explicit DynamicRingBuffer(size_t capacity);
+	~DynamicRingBuffer();
 
-	std::string PackProtocolRequest(const ProtocolRequest::Ptr &msg);
-	std::string PackProtocolResponse(const ProtocolResponse::Ptr &msg);
+	inline size_t Size() const { return m_size; }
+	inline size_t Capacity() const { return m_capacity; }
+	inline bool Empty() const { return m_size == 0; }
 
-	std::vector<ProtocolRequest::Ptr> UnPackProtocolRequest(std::vector<char> &buffer, std::size_t length);
-	std::vector<ProtocolResponse::Ptr> UnPackProtocolResponse(std::vector<char> &buffer, std::size_t length);
+	void Write(const char *data, size_t len);
+	size_t Read(char *dst, size_t len);
+	size_t PeekAt(size_t pos, char *dst, size_t len) const;
+	void Consume(size_t len);
 
 private:
-	ProtocolCodec() = default;
-	void SyncToMagic(std::vector<char> &buffer, std::size_t &length);
+	void CheckCapacity(size_t needed);
+
+	char *m_buf;
+	size_t m_capacity;
+	size_t m_head, m_tail, m_size;
+};
+
+constexpr uint32_t Magic = 0xA1B2C3D4;
+
+enum class Status : uint8_t
+{
+	SUCCESS,
+	INTERNAL_ERROR,
+	NOT_FOUND,
+	BAD_REQUEST,
+	UNAUTHORIZED,
+	FORBIDDEN,
+	TIMEOUT
+};
+
+enum class FrameType : uint8_t
+{
+	REQUEST,
+	RESPONSE,
+	PUSH,
+	PUSH_ACK,
+	PING,
+	PONG
+};
+
+enum class MethodType : uint16_t
+{
+	REGISTER = 0,
+	LOGIN,
+	LOGOUT,
+	CREATE_CHAT_ROOM,
+	INVITE_TO_CHAT_ROOM,
+	ACCEPT_CHAT_ROOM_INVITATION,
+	REJECT_CHAT_ROOM_INVITATION,
+	ONE_CHAT,
+	GROUP_CHAT,
+	ADD_FRIEND,
+	ACCEPT_FRIEND_INVITATION,
+	REJECT_FRIEND_INVITATION,
+
+	PUSH_MESSAGE = 0x100,
+	PUSH_CHAT_ROOM_INVITATION,
+	PUSH_CHAT_ROOM_INVITATION_DECISION,
+	PUSH_FRIEND_INVITATION,
+	PUSH_FRIEND_INVITATION_DECISION
+};
+
+struct ProtocolHeader
+{
+	using Ptr = std::shared_ptr<ProtocolHeader>;
+
+	uint32_t m_magic;
+	uint32_t m_requestId;
+	MethodType m_method;
+	FrameType m_type;
+	Status m_status;
+	uint32_t m_bodyLength;
+
+	std::vector<char> Serialize() const
+	{
+		std::vector<char> buffer;
+		buffer.reserve(sizeof(ProtocolHeader));
+
+		auto append = [&](auto value)
+		{
+			char *p = reinterpret_cast<char *>(&value);
+			buffer.insert(buffer.end(), p, p + sizeof(value));
+		};
+
+		append(m_magic);
+		append(m_requestId);
+		append(m_type);
+		append(m_method);
+		append(m_status);
+		append(m_bodyLength);
+
+		return buffer;
+	}
+
+	void DeSerialize(const std::vector<char> &buf, size_t offset)
+	{
+		auto read = [&](auto &field)
+		{
+			using T = std::decay_t<decltype(field)>;
+			if (offset + sizeof(T) > buf.size())
+				throw std::runtime_error("Buffer too small");
+			std::memcpy(&field, buf.data() + offset, sizeof(T));
+			offset += sizeof(T);
+		};
+
+		read(m_magic);
+		read(m_requestId);
+		read(m_type);
+		read(m_method);
+		read(m_status);
+		read(m_bodyLength);
+	}
+};
+
+struct ProtocolFrame
+{
+	using Ptr = std::shared_ptr<ProtocolFrame>;
+
+	ProtocolHeader m_header;
+	std::string m_payload;
+	uint32_t m_checkSum;
+};
+
+class ProtocolCodec
+{
+public:
+	ProtocolCodec();
+
+	std::string PackProtocolFrame(const ProtocolFrame::Ptr &frame);
+
+	std::vector<ProtocolFrame::Ptr> UnPackProtocolFrame(const char *buffer, size_t length);
+
+private:
+	void SyncToMagic();
+	DynamicRingBuffer m_buffer;
 };

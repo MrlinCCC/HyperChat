@@ -35,30 +35,32 @@ public:
     void CloseConnection();
 
     void Register(const std::string username, const std::string passwd);
-    void OnRegisterAction();
+    void RegisterFinishAction();
     void Login(const std::string username, const std::string passwd);
-    void OnLoginAction();
+    void LoginFinishAction();
 
 private:
     void OnResponse(Connection::Ptr conn, std::size_t length);
 
     template <typename BodyT>
-    void SendRequest(BodyT body, const std::string &method)
+    void SendRequest(BodyT body, MethodType method)
     {
-        auto protocolReq = std::make_shared<ProtocolRequest>();
-        protocolReq->m_method = method;
+        auto protocolReq = std::make_shared<ProtocolFrame>();
+        protocolReq->m_header.m_type = FrameType::REQUEST;
+        protocolReq->m_header.m_method = method;
         protocolReq->m_payload = Serializer::Serialize<BodyT>(body);
-        m_conn->AsyncWriteMessage(ProtocolCodec::Instance().PackProtocolRequest(protocolReq));
+        m_conn.AsyncWriteMessage(m_codec.PackProtocolFrame(protocolReq));
     }
 
     asio::io_context m_ioContext;
     asio::executor_work_guard<asio::io_context::executor_type> m_workGuard;
     Host m_serverHost;
-    Connection::Ptr m_conn;
+    Connection m_conn;
+    ProtocolCodec m_codec;
     bool m_isConnected;
 
-    std::unordered_map<std::string, std::function<void()>> m_pushActions;
-    std::unordered_map<std::string, std::function<void()>> m_responseActions;
+    std::unordered_map<MethodType, std::function<void()>> m_pushActions;
+    std::unordered_map<MethodType, std::function<void()>> m_responseActions;
 };
 
 #endif // CHATCLIENT_H
