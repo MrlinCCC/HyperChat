@@ -136,3 +136,60 @@ TEST_F(ChatServerTest, MessageSplitAcrossMultipleChunks)
                 { return handleCount >= 1; });
     EXPECT_EQ(handleCount, 1);
 }
+
+TEST_F(ChatServerTest, PingPongTest)
+{
+    m_chatServer->ResetHandleProtocolFrame();
+    std::thread t([this]()
+                  {
+        std::this_thread::sleep_for(std::chrono::milliseconds(SERVER_SESSION_TIMEOUT_MS));
+        EXPECT_EQ(m_chatServer->GetSessionCount(), 1); });
+
+    m_curRequest->m_header.m_requestId = 12345;
+    m_curRequest->m_header.m_method = MethodType::REGISTER;
+    m_curRequest->m_header.m_type = FrameType::PING;
+    int receiveCount = 0;
+    m_connection->SetMessageCallback([&](const Connection::Ptr &conn, std::size_t length)
+                                     {
+            auto frames=m_codec.UnPackProtocolFrame(conn->GetReadBuf(),length);
+            ASSERT_EQ(frames.size(),1);
+            const auto & f = frames[0];
+            ASSERT_EQ(f->m_header.m_type,FrameType::PONG);
+            receiveCount++;
+            std::lock_guard<std::mutex> lock(mtx);
+            cv.notify_one(); });
+    m_connection->AsyncReadMessage();
+    m_connection->AsyncWriteMessage(m_codec.PackProtocolFrame(m_curRequest));
+    std::unique_lock<std::mutex> lock(mtx);
+    cv.wait_for(lock, std::chrono::seconds(1), [&]
+                { return receiveCount >= 1; });
+    t.join();
+    EXPECT_EQ(receiveCount, 1);
+}
+
+TEST_F(ChatServerTest, HeartBeatResetTest)
+{
+    std::thread t([this]()
+                  {
+        std::this_thread::sleep_for(std::chrono::milliseconds(SERVER_SESSION_TIMEOUT_MS));
+        EXPECT_EQ(m_chatServer->GetSessionCount(), 1); });
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(SESSION_ALIVE_CHECK_INTERNAL_MS / 2));
+
+    m_curRequest->m_header.m_requestId = 12345;
+    m_curRequest->m_header.m_method = MethodType::ONE_CHAT;
+    m_curRequest->m_header.m_type = FrameType::REQUEST;
+    m_connection->AsyncWriteMessage(m_codec.PackProtocolFrame(m_curRequest));
+
+    t.join();
+}
+
+TEST_F(ChatServerTest, HeartBeatTimeoutTest)
+{
+    std::thread t([this]()
+                  {
+       std::this_thread::sleep_for(std::chrono::milliseconds(SERVER_SESSION_TIMEOUT_MS+SESSION_ALIVE_CHECK_INTERNAL_MS));
+        EXPECT_EQ(m_chatServer->GetSessionCount(), 0); });
+
+    t.join();
+}

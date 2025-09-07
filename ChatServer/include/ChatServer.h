@@ -11,6 +11,7 @@
 #include <atomic>
 #include "Configuration.hpp"
 #include "Session.h"
+#include "Timer.h"
 
 class ChatServer
 {
@@ -20,9 +21,20 @@ public:
     ~ChatServer();
     void Run();
     void Shutdown();
-    inline void ChatServer::SetHandleProtocolFrame(HandleProtocolFrameCallback handleProtocolFrame) // test
+    inline void SetHandleProtocolFrame(HandleProtocolFrameCallback handleProtocolFrame) // test
     {
         m_handleProtocolFrame = handleProtocolFrame;
+    }
+
+    inline void ResetHandleProtocolFrame() // test
+    {
+        m_handleProtocolFrame = std::bind(&ChatServer::HandleProtocolFrame, this, std::placeholders::_1, std::placeholders::_2);
+    }
+
+    inline size_t GetSessionCount() // test
+    {
+        std::lock_guard<std::mutex> lock(m_sessionMtx);
+        return m_sessionMap.size();
     }
 
 private:
@@ -36,6 +48,7 @@ private:
     std::atomic<bool> m_isRunning;
 
     HandleProtocolFrameCallback m_handleProtocolFrame;
+    Timer m_timer;
 
     std::unordered_map<uint32_t, std::weak_ptr<Session>> m_connIdToSession;
     std::mutex m_connIdSessionMtx;

@@ -1,5 +1,6 @@
 #include "ChatServer.h"
 #include "ChatService.h"
+#include <chrono>
 
 ChatServer::ChatServer(unsigned short port, size_t threadNum)
 	: m_tcpServer(port),
@@ -22,6 +23,7 @@ ChatServer::~ChatServer()
 void ChatServer::Run()
 {
 	m_isRunning = true;
+	m_timer.Start();
 	m_tcpServer.Run();
 }
 
@@ -52,6 +54,13 @@ void ChatServer::HandleConnection(const Connection::Ptr &conn)
 		std::lock_guard<std::mutex> lock(m_connIdSessionMtx);
 		m_connIdToSession.insert(std::make_pair(conn->GetConnId(), newSession));
 	}
+	m_timer.RunEvery(SESSION_ALIVE_CHECK_INTERNAL_MS, [newSession]()
+					 { 
+						auto now = std::chrono::steady_clock::now();
+						auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - newSession->GetLastReadTime()).count();
+						if(duration>=SERVER_SESSION_TIMEOUT_MS){
+							newSession->CloseSession();
+						} });
 }
 
 void ChatServer::HandleCloseConnection(const Connection::Ptr &conn)
@@ -90,12 +99,15 @@ void ChatServer::HandleProtocolFrame(const Session::Ptr &session, const Protocol
 			{
 				try
 				{
+					sess->ResetLastReadTime();
 					switch (frm->m_header.m_type)
 					{
 					case FrameType::PING:
-
+					{
+						auto f = std::make_shared<ProtocolFrame>(FrameType::PONG);
+						sess->SendFrame(f);
 						break;
-
+					}
 					case FrameType::REQUEST:
 					{
 						auto protocolResponse = ChatService::Instance().DispatchService(sess, frm);
@@ -103,8 +115,8 @@ void ChatServer::HandleProtocolFrame(const Session::Ptr &session, const Protocol
 						break;
 					}
 
-					case FrameType::PUSH_ACK:
-						break;
+						// case FrameType::PUSH_ACK:
+						// 	break;
 
 					default:
 						LOG_WARN("Unknown frame type {} from session {}", static_cast<uint8_t>(frm->m_header.m_type), sess->GetSessionId());
@@ -123,11 +135,10 @@ void ChatServer::HandleProtocolFrame(const Session::Ptr &session, const Protocol
 void ChatServer::HandleCloseSession(const std::shared_ptr<Session> &session)
 {
 	AuthState state = session->GetAuthState();
-	uint32_t userId = session->GetUserId();
-	if (state == AuthState::ANONYMOUS || userId <= 0)
+	uint32_t userId = session->GetUser().m_id;
+	if (state == AuthState::UnAUTHENTICATED || userId <= 0)
 		return;
 	auto &service = ChatService::Instance();
 	service.RemoveUserSession(userId);
-	service.RemoveUser(userId);
 	// todo OnUserOffline
 }

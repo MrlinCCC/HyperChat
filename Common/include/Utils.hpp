@@ -6,14 +6,14 @@
 template <typename T>
 inline uint32_t GenerateAutoIncrementId()
 {
-	static std::atomic<uint32_t> counter{ 1 };
+	static std::atomic<uint32_t> counter{1};
 	return counter.fetch_add(1);
 }
 
-inline std::string Sha256(const std::string& str)
+inline std::string Sha256(const std::string &str)
 {
 	unsigned char hash[SHA256_DIGEST_LENGTH];
-	SHA256(reinterpret_cast<const unsigned char*>(str.c_str()), str.size(), hash);
+	SHA256(reinterpret_cast<const unsigned char *>(str.c_str()), str.size(), hash);
 
 	std::stringstream ss;
 	for (unsigned char c : hash)
@@ -21,18 +21,18 @@ inline std::string Sha256(const std::string& str)
 	return ss.str();
 }
 
-template<typename T, typename U>
-inline U GetOrDefault(const std::unordered_map<T, U>& row,
-	const T& key,
-	const U& default_val)
+template <typename T, typename U>
+inline U GetOrDefault(const std::unordered_map<T, U> &row,
+					  const T &key,
+					  const U &default_val)
 {
 	auto it = row.find(key);
 	return it != row.end() ? it->second : default_val;
 }
 
-inline std::string GetOrDefault(const std::unordered_map<std::string, std::string>& row,
-	const std::string& key,
-	const std::string& default_val = "")
+inline std::string GetOrDefault(const std::unordered_map<std::string, std::string> &row,
+								const std::string &key,
+								const std::string &default_val = "")
 {
 	auto it = row.find(key);
 	return it != row.end() ? it->second : default_val;

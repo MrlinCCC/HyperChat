@@ -1,14 +1,16 @@
 #ifndef CHATCLIENT_H
 #define CHATCLIENT_H
+
 #include "iostream"
 #include "Protocol.h"
 #include "asio.hpp"
 #include "Connection.h"
-#define MAX_RETRIES 10
 #include <QObject>
 #include "Dto.hpp"
 #include "Serializer.hpp"
 #include "unordered_map"
+
+constexpr int MaxRetries = 10;
 
 struct Host
 {

@@ -1,6 +1,7 @@
 #pragma once
 #include <iostream>
 #include "Connection.h"
+#include "Dto.hpp"
 
 enum class SessionState
 {
@@ -12,7 +13,7 @@ enum class SessionState
 
 enum class AuthState
 {
-    ANONYMOUS,
+    UnAUTHENTICATED,
     AUTHENTICATED
 };
 
@@ -48,14 +49,19 @@ public:
         return m_sessionId;
     }
 
-    inline void SetUserId(uint32_t id)
+    inline void BindUser(User user)
     { // 绑定登录用户Id
-        m_userId = id;
+        m_user = user;
     }
 
-    inline uint32_t GetUserId() const
+    inline const User &GetUser() const
     {
-        return m_userId;
+        return m_user;
+    }
+
+    inline void UnbindUser()
+    {
+        m_user = User();
     }
 
     inline SessionState GetState() const
@@ -78,8 +84,18 @@ public:
         m_authState = state;
     }
 
+    inline std::chrono::steady_clock::time_point GetLastReadTime() const
+    {
+        return m_lastReadTime;
+    }
+
+    inline void ResetLastReadTime()
+    {
+        m_lastReadTime = std::chrono::steady_clock::now();
+    }
+
 private:
-    uint32_t m_userId;
+    User m_user;
     uint32_t m_sessionId;
 
     std::shared_ptr<Connection> m_conn;
@@ -89,5 +105,7 @@ private:
     OnCloseSession m_onCloseSession;
 
     std::atomic<SessionState> m_state{SessionState::INIT};
-    std::atomic<AuthState> m_authState{AuthState::ANONYMOUS};
+    std::atomic<AuthState> m_authState{AuthState::UnAUTHENTICATED};
+
+    std::atomic<std::chrono::steady_clock::time_point> m_lastReadTime;
 };

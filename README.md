@@ -9,7 +9,7 @@
 - Asio：高性能异步网络编程库，实现高效 IO 处理
 - SQLite: 轻量级数据库，存储应用数据
 - Google Test：单元测试框架，保障代码质量
-- Goole Benchmark: 函数级性能框架
+- Google Benchmark: 函数级性能框架
 
 ## 🚀 预期基本功能
 
@@ -31,10 +31,10 @@ HyperChatServer 是一个轻量级、高性能的 C++ 聊天服务器，专为�
 
 ```bash
 git clone https://github.com/MrlinCCC/HyperChat.git
-Update your VCPKG_ROOT in CMakePresets.json
+Update your configuration in CMakePresets.json
 cd HyperChat
 mkdir build && cd build
-cmake --preset ..
+cmake --preset default ..
 cmake --build .
 ```
 
@@ -49,6 +49,7 @@ cmake --build .
 
 ## 📋 未来计划功能
 
+- 权限功能
 - 端到端加密，保障消息安全。
 - 支持图片、文件等更多多媒体消息的传输。
 - 防刷限流和垃圾信息过滤屏蔽。

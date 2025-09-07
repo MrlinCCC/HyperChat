@@ -1,7 +1,8 @@
 #include "Session.h"
 #include "Utils.hpp"
 
-Session::Session(std::shared_ptr<Connection> conn) : m_userId(0), m_conn(conn), m_codec(std::make_unique<ProtocolCodec>())
+Session::Session(std::shared_ptr<Connection> conn) : m_conn(conn),
+                                                     m_codec(std::make_unique<ProtocolCodec>()), m_lastReadTime(std::chrono::steady_clock::now())
 {
     m_sessionId = GenerateAutoIncrementId<Session>();
 }

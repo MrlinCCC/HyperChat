@@ -53,12 +53,6 @@ ChatService::ChatService()
 	RegisterServiceHandler<RejectFriendInvitationT, HandleInvitationRequest, StatusResponse>(MethodType::REJECT_FRIEND_INVITATION, rejectFriendInvitationHandler);
 }
 
-void ChatService::RemoveUser(uint32_t userId)
-{
-	std::lock_guard<std::mutex> lock(m_userMtx);
-	m_userMap.erase(userId);
-}
-
 void ChatService::RemoveUserSession(uint32_t userId)
 {
 	std::lock_guard<std::mutex> lock(m_userIdSessionMtx);
@@ -165,17 +159,13 @@ void ChatService::InitDatabase()
 
 bool ChatService::CheckAuth(uint32_t userId, const Session::Ptr &session)
 {
-	std::lock_guard<std::mutex> lock(m_userIdSessionMtx);
-	auto it = m_userIdSessionMap.find(userId);
-	if (it == m_userIdSessionMap.end())
-		return false;
-	return it->second == session;
+	return userId == session->GetUser().m_id;
 }
 
 bool ChatService::IsUserOnline(uint32_t userId)
 {
-	std::lock_guard<std::mutex> lock(m_userMtx);
-	return m_userMap.find(userId) != m_userMap.end();
+	std::lock_guard<std::mutex> lock(m_userIdSessionMtx);
+	return m_userIdSessionMap.find(userId) != m_userIdSessionMap.end();
 }
 
 const Session::Ptr &ChatService::GetUserSession(uint32_t userId)
@@ -261,19 +251,19 @@ AuthResponse ChatService::LoginHandler(const Session::Ptr &session, const AuthRe
 		m_userIdSessionMap[user.m_id] = session;
 	}
 	{
-		std::lock_guard<std::mutex> lock(m_userMtx);
+		std::lock_guard<std::mutex> lock(m_userIdSessionMtx);
 		user.m_state = UserState::ONLINE;
-		m_userMap[user.m_id] = user;
+		session->BindUser(user);
 		session->SetAuthState(AuthState::AUTHENTICATED);
+		m_userIdSessionMap[user.m_id] = session;
 	}
-	session->SetUserId(user.m_id);
 	response.m_user = user;
 	response.m_chatRooms = p_sqlExecuser->ExecuteQuery<ChatRoom>(QueryChatRoomByUserId, user.m_id);
 	response.m_friends = p_sqlExecuser->ExecuteQuery<User>(QueryFriendsByUserId, user.m_id);
 	for (auto &frd : response.m_friends)
 	{
 		{
-			frd.m_state = IsUserOnline(frd.m_id) ? m_userMap[frd.m_id].m_state : UserState::OFFLINE;
+			frd.m_state = IsUserOnline(frd.m_id) ? m_userIdSessionMap[frd.m_id]->GetUser().m_state : UserState::OFFLINE;
 		}
 	}
 	try
@@ -307,14 +297,12 @@ StatusResponse ChatService::LogoutHandler(const Session::Ptr &session, const Use
 		return response;
 	}
 	{
-		std::lock_guard<std::mutex> lock(m_userMtx);
-		m_userMap.erase(request.m_userId);
-	}
-	{
 		std::lock_guard<std::mutex> lock(m_userIdSessionMtx);
 		m_userIdSessionMap.erase(request.m_userId);
 	}
 	status = Status::SUCCESS;
+	session->SetAuthState(AuthState::UnAUTHENTICATED);
+	session->UnbindUser();
 	return response;
 }
 
@@ -373,8 +361,8 @@ ChatRoomInvitationResponse ChatService::InviteToChatRoomHandler(const Session::P
 		auto member = p_sqlExecuser->ExecuteUpdateAndReturn<ChatRoomMember>(InsertChatRoomMember, request.m_roomId, request.m_inviteeId, ChatRoomRole::MEMBER, AddRelationStatus::PENDING, request.m_inviterId);
 		response.m_invitation.m_id = member.m_id;
 		{
-			std::lock_guard<std::mutex> lock(m_userMtx);
-			response.m_invitation.m_inviter = m_userMap[request.m_inviterId];
+			std::lock_guard<std::mutex> lock(m_userIdSessionMtx);
+			response.m_invitation.m_inviter = m_userIdSessionMap[request.m_inviterId]->GetUser();
 		}
 		response.m_invitation.m_chatRoom = p_sqlExecuser->ExecuteQuery<ChatRoom>(QueryChatRoomByCrId, member.m_roomId)[0];
 		if (auto inviteeConn = GetUserSession(request.m_inviteeId))
@@ -414,13 +402,13 @@ ChatRoomResponse ChatService::AcceptChatRoomInvitationHandler(const Session::Ptr
 	auto invitation = results[0];
 	p_sqlExecuser->ExecuteUpdate(UpdateChatRoomMemberStatus, AddRelationStatus::ACCEPTED, request.m_invitation_id);
 	response.m_chatRoom = p_sqlExecuser->ExecuteQuery<ChatRoom>(QueryChatRoomByCrId, invitation.m_chatRoom.m_id)[0];
-	if (auto userConn = GetUserSession(invitation.m_inviter.m_id))
+	if (auto userSess = GetUserSession(invitation.m_inviter.m_id))
 	{
 		ChatRoomInvitationDecision decision;
 		decision.m_invitationId = invitation.m_id;
 		decision.m_chatRoom = invitation.m_chatRoom;
 		decision.m_status = AddRelationStatus::ACCEPTED;
-		PushOnlineData<ChatRoomInvitationDecision>(userConn, decision, MethodType::PUSH_CHAT_ROOM_INVITATION_DECISION);
+		PushOnlineData<ChatRoomInvitationDecision>(userSess, decision, MethodType::PUSH_CHAT_ROOM_INVITATION_DECISION);
 	}
 	status = Status::SUCCESS;
 	return response;
@@ -444,13 +432,13 @@ StatusResponse ChatService::RejectChatRoomInvitationHandler(const Session::Ptr &
 	}
 	auto invitation = results[0];
 	p_sqlExecuser->ExecuteUpdate(UpdateChatRoomMemberStatus, AddRelationStatus::REJECTED, request.m_invitation_id);
-	if (auto userConn = GetUserSession(invitation.m_inviter.m_id))
+	if (auto userSess = GetUserSession(invitation.m_inviter.m_id))
 	{
 		ChatRoomInvitationDecision decision;
 		decision.m_invitationId = invitation.m_id;
 		decision.m_chatRoom = invitation.m_chatRoom;
 		decision.m_status = AddRelationStatus::REJECTED;
-		PushOnlineData<ChatRoomInvitationDecision>(userConn, decision, MethodType::PUSH_CHAT_ROOM_INVITATION_DECISION);
+		PushOnlineData<ChatRoomInvitationDecision>(userSess, decision, MethodType::PUSH_CHAT_ROOM_INVITATION_DECISION);
 	}
 	status = Status::SUCCESS;
 	return response;
@@ -596,8 +584,8 @@ FriendInvitationResponse ChatService::AddFriendHandler(const Session::Ptr &sessi
 	auto friendRlt = p_sqlExecuser->ExecuteUpdateAndReturn<FriendRelation>(InsertFriend, request.m_userId, request.m_friendId, AddRelationStatus::PENDING);
 	response.m_invitation.m_id = friendRlt.m_id;
 	{
-		std::lock_guard<std::mutex> lock(m_userMtx);
-		response.m_invitation.m_inviter = m_userMap[request.m_userId];
+		std::lock_guard<std::mutex> lock(m_userIdSessionMtx);
+		response.m_invitation.m_inviter = m_userIdSessionMap[request.m_userId]->GetUser();
 	}
 	if (auto friendConn = GetUserSession(request.m_friendId))
 	{
@@ -626,20 +614,20 @@ UserResponse ChatService::AcceptFriendHandler(const Session::Ptr &session, const
 	auto invitation = results[0];
 	p_sqlExecuser->ExecuteUpdate(UpdateFriendStatus, AddRelationStatus::ACCEPTED, request.m_invitation_id);
 	p_sqlExecuser->ExecuteUpdate(InsertFriend, invitation.m_friendId, invitation.m_userId, AddRelationStatus::ACCEPTED); // 双向关系
-	if (auto userConn = GetUserSession(invitation.m_userId))
+	if (auto userSess = GetUserSession(invitation.m_userId))
 	{
 		{
-			std::lock_guard<std::mutex> lock(m_userMtx);
-			response.m_user = m_userMap[invitation.m_userId];
+			std::lock_guard<std::mutex> lock(m_userIdSessionMtx);
+			response.m_user = m_userIdSessionMap[invitation.m_userId]->GetUser();
 		}
 		FriendInvitationDecision decision;
 		decision.m_invitationId = request.m_invitation_id;
 		{
-			std::lock_guard<std::mutex> lock(m_userMtx);
-			decision.m_friend = m_userMap[request.m_userId];
+			std::lock_guard<std::mutex> lock(m_userIdSessionMtx);
+			decision.m_friend = m_userIdSessionMap[request.m_userId]->GetUser();
 		}
 		decision.m_status = AddRelationStatus::ACCEPTED;
-		PushOnlineData<FriendInvitationDecision>(userConn, decision, MethodType::PUSH_FRIEND_INVITATION_DECISION);
+		PushOnlineData<FriendInvitationDecision>(userSess, decision, MethodType::PUSH_FRIEND_INVITATION_DECISION);
 	}
 	else
 	{
@@ -667,16 +655,16 @@ StatusResponse ChatService::RejectFriendHandler(const Session::Ptr &session, con
 	}
 	auto invitation = results[0];
 	p_sqlExecuser->ExecuteUpdate(UpdateFriendStatus, AddRelationStatus::REJECTED, request.m_invitation_id);
-	if (auto userConn = GetUserSession(invitation.m_userId))
+	if (auto userSess = GetUserSession(invitation.m_userId))
 	{
 		FriendInvitationDecision decision;
 		decision.m_invitationId = request.m_invitation_id;
 		{
-			std::lock_guard<std::mutex> lock(m_userMtx);
-			decision.m_friend = m_userMap[request.m_userId];
+			std::lock_guard<std::mutex> lock(m_userIdSessionMtx);
+			decision.m_friend = m_userIdSessionMap[request.m_userId]->GetUser();
 		}
 		decision.m_status = AddRelationStatus::REJECTED;
-		PushOnlineData<FriendInvitationDecision>(userConn, decision, MethodType::PUSH_FRIEND_INVITATION_DECISION);
+		PushOnlineData<FriendInvitationDecision>(userSess, decision, MethodType::PUSH_FRIEND_INVITATION_DECISION);
 	}
 	status = Status::SUCCESS;
 	return response;

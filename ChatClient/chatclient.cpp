@@ -28,15 +28,15 @@ void ChatClient::ConnectServer()
         return;
     }
     int attempts = 0;
-    while (attempts < MAX_RETRIES && !m_conn.Connect(endpoints))
+    while (attempts < MaxRetries && !m_conn.Connect(endpoints))
     {
         ++attempts;
         LOG_INFO("Connection attempt {} failed. Retrying...", attempts);
         std::this_thread::sleep_for(std::chrono::seconds(5));
-        if (attempts == MAX_RETRIES)
+        if (attempts == MaxRetries)
         {
             LOG_ERROR("Failed to connect after {} attempts to {}:{}. Max retries reached.",
-                      MAX_RETRIES,
+                      MaxRetries,
                       m_serverHost.hostName,
                       m_serverHost.port);
             return;

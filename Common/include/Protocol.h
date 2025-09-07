@@ -64,7 +64,7 @@ enum class FrameType : uint8_t
 	REQUEST,
 	RESPONSE,
 	PUSH,
-	PUSH_ACK,
+	// PUSH_ACK, 聊天室场景不保证消息的可靠性
 	PING,
 	PONG
 };
@@ -150,6 +150,22 @@ struct ProtocolFrame
 	ProtocolHeader m_header;
 	std::string m_payload;
 	uint32_t m_checkSum;
+
+	ProtocolFrame() = default;
+
+	ProtocolFrame(FrameType type)
+	{
+		m_header.m_type = type;
+	}
+
+	ProtocolFrame(FrameType type, MethodType method, uint32_t requestId, Status status = Status::SUCCESS, std::string payload = "")
+	{
+		m_header.m_type = type;
+		m_header.m_method = method;
+		m_header.m_requestId = requestId;
+		m_header.m_status = status;
+		m_payload = payload;
+	}
 };
 
 class ProtocolCodec

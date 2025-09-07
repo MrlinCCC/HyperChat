@@ -6,7 +6,9 @@ add_library(Common STATIC
     src/Timestamp.cpp
     src/Spinlock.cpp
     src/Protocol.cpp
-    src/Connection.cpp)
+    src/Connection.cpp
+    src/Timer.cpp
+    )
 
 find_package(OpenSSL CONFIG REQUIRED)
 

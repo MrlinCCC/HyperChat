@@ -62,8 +62,6 @@ public:
 private:
 	ChatService();
 
-	void RemoveUser(uint32_t userId);
-
 	void RemoveUserSession(uint32_t userId);
 
 	void InitDatabase();
@@ -100,6 +98,8 @@ private:
 
 	StatusResponse RejectChatRoomInvitationHandler(const Session::Ptr &session, const HandleInvitationRequest &request, Status &status);
 
+	StatusResponse EnterChatRoom(const Session::Ptr &session, const HandleInvitationRequest &request, Status &status);
+
 	MessageResponse OneChatHandler(const Session::Ptr &session, const OneChatRequest &request, Status &status);
 
 	MessageResponse GroupChatHandler(const Session::Ptr &session, const GroupChatRequest &request, Status &status);
@@ -114,9 +114,7 @@ private:
 
 	std::shared_ptr<SQLExecuser> p_sqlExecuser;
 
-	std::unordered_map<uint32_t, User> m_userMap;
 	std::unordered_map<uint32_t, Session::Ptr> m_userIdSessionMap;
-	std::mutex m_userMtx;
 	std::mutex m_userIdSessionMtx;
 
 	friend class ChatServer;
